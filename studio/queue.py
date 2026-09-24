@@ -66,6 +66,7 @@ class Queue:
     def _bootstrap(self):
         try:
             self.store.initialize()
+            self.store.recover_deletions()
             # MIDI operation tables are created by initialize(); recover only
             # after that point so app/TestClient startup cannot race SQLite
             # schema creation.

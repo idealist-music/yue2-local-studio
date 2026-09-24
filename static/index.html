@@ -64,7 +64,7 @@
       </section>
       <section id="song-detail" class="panel song-detail" aria-labelledby="detail-title" hidden>
         <p class="eyebrow">TRACK DETAILS</p>
-        <div class="section-head"><h2 id="detail-title"></h2><button id="detail-favorite" class="quiet" type="button">☆ お気に入り</button></div>
+        <div class="section-head"><h2 id="detail-title"></h2><div class="detail-header-actions"><button id="detail-favorite" class="quiet" type="button">☆ お気に入り</button><button id="detail-delete" class="delete-song-button" type="button" title="曲を削除" aria-label="曲を削除" aria-describedby="detail-title"><span aria-hidden="true">🗑</span></button></div></div>
         <p id="detail-meta" class="subtle"></p><p id="detail-error" class="notice" hidden></p>
         <div class="detail-actions"><button id="restore" class="quiet" type="button">この条件をフォームに戻す</button><button id="regenerate" class="quiet" type="button">条件・Seedを保って再生成</button><button id="reuse-score" class="accent-outline" type="button" hidden>この譜面で別バージョンを作る</button></div>
         <p id="reuse-explanation" class="hint" hidden>譜面を条件に曲全体を再生成します。声や演奏が変わる場合があります。</p>
@@ -82,6 +82,14 @@
     <audio id="audio" controls preload="metadata"></audio><button id="player-stop" class="quiet small" type="button">停止</button><p id="audio-error" class="hint" hidden>音声を再生できません。FLACをダウンロードして再生してください。</p>
   </section>
   <div id="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="delete-dialog" aria-labelledby="delete-heading" aria-describedby="delete-summary">
+    <h2 id="delete-heading">曲を削除</h2>
+    <p class="delete-target">「<strong id="delete-title"></strong>」</p>
+    <p id="delete-summary" class="hint">削除対象を確認しています…</p>
+    <p id="delete-preserved" class="hint"></p>
+    <p id="delete-error" class="notice" role="alert" hidden></p>
+    <div class="delete-actions"><button id="delete-cancel" type="button" class="quiet">キャンセル</button><button id="delete-confirm" type="button" class="danger-button" disabled>削除</button></div>
+  </dialog>
   <dialog id="diagnostics"><div class="section-head"><h2>設定・診断</h2><button id="diagnostics-close" class="quiet" type="button">閉じる</button></div><p class="hint">設定は config.local.json で変更できます。変更後はアプリを再起動してください。</p><pre id="diagnostics-content"></pre></dialog>
   <dialog id="cover-dialog" aria-labelledby="cover-heading">
     <div class="section-head"><div><p class="eyebrow">COVER STUDIO</p><h2 id="cover-heading">メロディから、新しいアレンジへ。</h2></div><button id="cover-close" type="button" class="quiet">閉じる</button></div>

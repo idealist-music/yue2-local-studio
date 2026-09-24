@@ -5,6 +5,7 @@ import hashlib
 import json
 import re
 import secrets
+import sqlite3
 from pathlib import Path
 from typing import Literal
 
@@ -106,7 +107,8 @@ def create_app(config):
                 return JSONResponse({"detail": "外部サイトからの操作は受け付けません"}, status_code=403)
             upload = request.method == "POST" and request.url.path in ("/api/covers/upload", "/api/motifs/upload", "/api/midi/imports")
             expected_type = "application/octet-stream" if upload else "application/json"
-            if request.headers.get("content-type", "").split(";")[0].strip() != expected_type:
+            empty_delete = request.method == "DELETE" and not request.headers.get("content-type") and not await request.body()
+            if not empty_delete and request.headers.get("content-type", "").split(";")[0].strip() != expected_type:
                 return JSONResponse({"detail": "application/json が必要です"}, status_code=415)
             if not upload and len(await request.body()) > 1024 * 1024:
                 return JSONResponse({"detail": "入力は全体で1 MiB以内にしてください。切り捨ては行いません"}, status_code=413)
@@ -179,6 +181,34 @@ def create_app(config):
     @app.get("/api/jobs/{job_id}")
     def detail(job_id: str):
         return public(get_job(job_id), detail=True)
+
+    @app.get("/api/jobs/{job_id}/deletion")
+    def deletion_preview(job_id: str):
+        try:
+            with queue.control:
+                if queue.active_id == job_id:
+                    raise ValueError("実行中のジョブは削除できません。完了後に再試行してください")
+                return store.deletion_preview(job_id)
+        except LookupError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+        except (OSError, sqlite3.Error, RuntimeError) as exc:
+            raise HTTPException(500, "削除対象の確認に失敗しました。保存先とDBを確認してください") from exc
+
+    @app.delete("/api/jobs/{job_id}")
+    def delete_job(job_id: str):
+        try:
+            with queue.control:
+                if queue.active_id == job_id:
+                    raise ValueError("実行中のジョブは削除できません。完了後に再試行してください")
+                return store.delete_job(job_id)
+        except LookupError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+        except (OSError, sqlite3.Error, RuntimeError) as exc:
+            raise HTTPException(500, "削除処理に失敗しました。保存データを確認してください") from exc
 
     @app.post("/api/jobs", status_code=202)
     def create(body: Submission):

@@ -9,6 +9,7 @@ import zipfile
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from fractions import Fraction
+from functools import wraps
 from pathlib import Path
 
 from .midi_codec import MidiError, parse as parse_midi
@@ -16,6 +17,14 @@ from .midi_score import export_abc, import_midi, serialize_edited, new_abc_from_
 from .storage import now, write_bytes_atomic, write_json
 
 MAX_UPLOAD = 8 * 1024 * 1024
+
+
+def serialized_with_song_deletion(method):
+    @wraps(method)
+    def run(self, *args, **kwargs):
+        with self.store.lifecycle_lock:
+            return method(self, *args, **kwargs)
+    return run
 
 
 class MidiService:
@@ -40,6 +49,7 @@ class MidiService:
     def _tools(self):
         return self.covers.tools()
 
+    @serialized_with_song_deletion
     def version_for_job(self, job_id):
         self._recover_midi_tasks()
         job = self.store.get(job_id)
@@ -58,8 +68,12 @@ class MidiService:
             validation={"source": "job artifact"}, source_job_id=job_id,
             edit_summary={"kind": "initial_snapshot"})
 
+    @serialized_with_song_deletion
     def export(self, version, *, voices, start_bar, end_bar, section=None, submission_key=None):
         self._recover_midi_tasks()
+        current = self.store.get_score_version(version["id"])
+        if not current or current["song_id"] != version["song_id"]:
+            raise ValueError("元の譜面版は既に削除されています")
         input_sha256 = hashlib.sha256(json.dumps({"version": version["id"], "abc": version["abc_sha256"],
                                                   "voices": voices, "start_bar": start_bar, "end_bar": end_bar,
                                                   "section": section}, sort_keys=True).encode()).hexdigest()
@@ -164,6 +178,7 @@ class MidiService:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(self._cpu_executor, lambda: self.upload(data, filename, sidecar=sidecar, submission_key=submission_key))
 
+    @serialized_with_song_deletion
     def attach_sidecar(self, import_id, sidecar):
         """Validate sidecar against server-held export/version and uploaded MIDI."""
         record = self.store.get_midi_import(import_id)
@@ -213,6 +228,7 @@ class MidiService:
             raise ValueError("MIDIアップロードがありません")
         return path.read_bytes()
 
+    @serialized_with_song_deletion
     def preview(self, import_id, *, target_song_id, target_version_id, voice_map, start_bar, end_bar, quantization, transpose=0):
         record = self.store.get_midi_import(import_id)
         version = self.store.get_score_version(target_version_id)
@@ -302,6 +318,7 @@ class MidiService:
         return {"preview_token": token, "analysis": analysis, "edited_abc": edited,
                 "changed_bars": analysis.get("changed_bars", []), "warnings": ["音声はこのABCから全曲再生成されます"]}
 
+    @serialized_with_song_deletion
     def save(self, import_id, *, preview_token, expected_version_id, submission=None):
         record = self.store.get_midi_import(import_id)
         if record and record["state"] == "saved" and record.get("result_version_id"):
@@ -322,6 +339,7 @@ class MidiService:
         self.store.update_midi_import(import_id, state="saved", result_version_id=version["id"])
         return version
 
+    @serialized_with_song_deletion
     def save_new_song(self, import_id, *, voice_map, title, style, lyrics, seed, bpm, meter, key):
         existing_record = self.store.get_midi_import(import_id)
         if existing_record and existing_record["state"] == "saved" and existing_record.get("result_version_id"):

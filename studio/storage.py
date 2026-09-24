@@ -5,13 +5,16 @@ import json
 import math
 import os
 import re
+import shutil
 import sqlite3
+import threading
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
 TERMINAL = {"completed", "truncated", "failed", "interrupted", "cancelled", "reviewed"}
+DELETABLE = TERMINAL | {"awaiting_review"}
 ID_RE = re.compile(r"^[0-9a-f]{32}$")
 FILES = {"flac": ("audio.flac", "audio/flac"), "wav": ("preview.wav", "audio/wav"),
          "abc": ("score.abc", "text/plain; charset=utf-8"),
@@ -50,6 +53,7 @@ class Store:
     def __init__(self, root):
         self.root = Path(root)
         self.path = self.root / "studio.sqlite3"
+        self.lifecycle_lock = threading.RLock()
 
     @contextmanager
     def connect(self):
@@ -222,6 +226,157 @@ class Store:
     def favorite(self, job_id, value):
         with self.connect() as db:
             return db.execute("UPDATE jobs SET favorite=? WHERE id=?", (int(value), job_id)).rowcount == 1
+
+    def _deletion_plan(self, db, job_id):
+        if not ID_RE.fullmatch(job_id):
+            raise LookupError("曲が見つかりません")
+        job = db.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone()
+        if not job:
+            raise LookupError("曲が見つかりません")
+        if job["status"] not in DELETABLE:
+            raise ValueError("待機中・実行中のジョブは削除できません。先に停止またはキャンセルしてください")
+
+        versions = db.execute("SELECT id,abc_path FROM score_versions WHERE song_id=?", (job_id,)).fetchall()
+        version_ids = {row["id"] for row in versions}
+        for row in versions:
+            if row["abc_path"] != f"score_versions/{row['id']}/score.abc":
+                raise ValueError("譜面版の保存先を安全に確認できないため削除できません")
+        exports = db.execute("SELECT id,source_version_id,state FROM midi_exports").fetchall()
+        owned_exports = [row for row in exports if row["source_version_id"] in version_ids]
+        export_ids = {row["id"] for row in owned_exports}
+        imports = db.execute("SELECT id,target_song_id,target_version_id,result_version_id,source_export_id,state FROM midi_imports").fetchall()
+        owned_imports = [row for row in imports if row["target_song_id"] == job_id]
+        import_ids = {row["id"] for row in owned_imports}
+
+        other_jobs = db.execute("SELECT id,score_version_id,midi_import_id FROM jobs WHERE id<>?", (job_id,)).fetchall()
+        if any(row["score_version_id"] in version_ids or row["midi_import_id"] in import_ids for row in other_jobs):
+            raise ValueError("他の曲がこの譜面版またはMIDIを参照しています。共有データを保護するため削除できません")
+        other_versions = db.execute("SELECT parent_version_id FROM score_versions WHERE song_id<>?", (job_id,)).fetchall()
+        if any(row["parent_version_id"] in version_ids for row in other_versions):
+            raise ValueError("他の曲がこの譜面版を参照しています。共有データを保護するため削除できません")
+        if any(row["target_version_id"] in version_ids or row["result_version_id"] in version_ids
+               or row["source_export_id"] in export_ids for row in imports if row["id"] not in import_ids):
+            raise ValueError("他のMIDI作業がこの曲の譜面または書き出しを参照しています。共有データを保護するため削除できません")
+        if any(row["state"] in ("queued", "converting") for row in owned_exports) or any(
+                row["state"] in ("uploaded", "analyzing") for row in owned_imports):
+            raise ValueError("この曲のMIDI処理中です。処理終了後に削除してください")
+
+        paths = [Path("jobs") / job_id, Path("logs") / f"{job_id}.log"]
+        paths.extend(Path("score_versions") / item for item in sorted(version_ids))
+        paths.extend(Path("midi") / "exports" / item for item in sorted(export_ids))
+        paths.extend(Path("midi") / "imports" / item for item in sorted(import_ids))
+        return {"id": job_id, "title": job["title"], "status": job["status"], "task": job["task"],
+                "group_id": job["group_id"], "versions": sorted(version_ids), "exports": sorted(export_ids),
+                "imports": sorted(import_ids), "paths": paths}
+
+    def deletion_preview(self, job_id):
+        with self.lifecycle_lock, self.connect() as db:
+            plan = self._deletion_plan(db, job_id)
+        return {"id": plan["id"], "title": plan["title"], "status": plan["status"],
+                "item_kind": "job" if plan["status"] in ("failed", "interrupted", "cancelled") else "song",
+                "score_versions": len(plan["versions"]), "midi_exports": len(plan["exports"]),
+                "midi_imports": len(plan["imports"]),
+                "preserved": "カバー・Motif素材、他の曲、共有ログ、DBバックアップ、外部音源は残ります"}
+
+    def _owned_delete_path(self, relative):
+        parts = relative.parts
+        valid = ((len(parts) == 2 and parts[0] == "jobs" and ID_RE.fullmatch(parts[1])) or
+                 (len(parts) == 2 and parts[0] == "logs" and parts[1].endswith(".log") and ID_RE.fullmatch(parts[1][:-4])) or
+                 (len(parts) == 2 and parts[0] == "score_versions" and ID_RE.fullmatch(parts[1])) or
+                 (len(parts) == 3 and parts[:2] in (("midi", "exports"), ("midi", "imports")) and ID_RE.fullmatch(parts[2])))
+        if not valid:
+            raise ValueError("削除対象の保存先が不正です")
+        path = self.root
+        for part in parts:
+            path = path / part
+            if path.is_symlink():
+                raise ValueError("削除対象にシンボリックリンクがあります")
+        if not path.resolve().is_relative_to(self.root.resolve()):
+            raise ValueError("削除対象が保存先の外にあります")
+        return path
+
+    def _deletion_staging(self):
+        root = self.root / ".deleting"
+        if root.is_symlink() or not root.resolve().is_relative_to(self.root.resolve()):
+            raise ValueError("削除用の一時保存先が不正です")
+        root.mkdir(exist_ok=True)
+        return root
+
+    def _restore_deletion(self, stage, paths):
+        for index in reversed(range(len(paths))):
+            staged = stage / str(index)
+            if not staged.exists():
+                continue
+            destination = self._owned_delete_path(Path(paths[index]))
+            if destination.exists():
+                raise RuntimeError("削除中断後の復元先が既に存在します。データを保護するため停止しました")
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            staged.rename(destination)
+        shutil.rmtree(stage)
+
+    def recover_deletions(self):
+        with self.lifecycle_lock:
+            root = self.root / ".deleting"
+            if not root.exists():
+                return
+            if root.is_symlink() or not root.resolve().is_relative_to(self.root.resolve()):
+                raise ValueError("削除用の一時保存先が不正です")
+            for stage in root.iterdir():
+                if stage.is_symlink() or not stage.is_dir() or not ID_RE.fullmatch(stage.name):
+                    raise ValueError("削除用の一時保存先に不明な項目があります")
+                manifest_path = stage / "manifest.json"
+                if not manifest_path.exists() and all(item.name == "manifest.json.tmp" for item in stage.iterdir()):
+                    # A crash before the manifest was committed cannot have moved files.
+                    shutil.rmtree(stage)
+                    continue
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+                if manifest.get("job_id") != stage.name or not isinstance(manifest.get("paths"), list):
+                    raise ValueError("削除復旧情報が不正です")
+                paths = manifest["paths"]
+                for relative in paths:
+                    self._owned_delete_path(Path(relative))
+                with self.connect() as db:
+                    exists = db.execute("SELECT 1 FROM jobs WHERE id=?", (stage.name,)).fetchone()
+                if exists:
+                    self._restore_deletion(stage, paths)
+                else:
+                    shutil.rmtree(stage)
+
+    def delete_job(self, job_id):
+        with self.lifecycle_lock:
+            stage = None
+            try:
+                with self.connect() as db:
+                    db.execute("BEGIN IMMEDIATE")
+                    plan = self._deletion_plan(db, job_id)
+                    paths = [path for path in plan["paths"] if self._owned_delete_path(path).exists()]
+                    if paths:
+                        candidate = self._deletion_staging() / job_id
+                        candidate.mkdir(exist_ok=False)
+                        stage = candidate
+                        write_json(stage / "manifest.json", {"job_id": job_id, "paths": [str(path) for path in paths]})
+                        for index, relative in enumerate(paths):
+                            self._owned_delete_path(relative).rename(stage / str(index))
+                    for table, column, values in (("midi_imports", "id", plan["imports"]),
+                                                  ("midi_exports", "id", plan["exports"]),
+                                                  ("score_versions", "id", plan["versions"])):
+                        if values:
+                            db.execute(f"DELETE FROM {table} WHERE {column} IN ({','.join('?' for _ in values)})", values)
+                    db.execute("DELETE FROM score_heads WHERE song_id=?", (job_id,))
+                    db.execute("DELETE FROM jobs WHERE id=?", (job_id,))
+                    db.execute("DELETE FROM submissions WHERE group_id=? AND NOT EXISTS (SELECT 1 FROM jobs WHERE group_id=?)",
+                               (plan["group_id"], plan["group_id"]))
+            except Exception:
+                if stage is not None and stage.exists():
+                    self._restore_deletion(stage, [str(path) for path in paths])
+                raise
+            cleanup_pending = False
+            if stage is not None:
+                try:
+                    shutil.rmtree(stage)
+                except OSError:
+                    cleanup_pending = True
+            return {"status": "deleted", "id": job_id, "cleanup_pending": cleanup_pending}
 
     def job_dir(self, job_id):
         if not ID_RE.fullmatch(job_id):

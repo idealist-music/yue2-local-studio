@@ -1,6 +1,7 @@
 "use strict";
 const $ = (id) => document.getElementById(id);
-const state = {jobs: [], selected: null, detail: null, source: null, favorites: false, paused: false, listKey: "", queueKey: "", pending: null, submitting: false};
+const state = {jobs: [], selected: null, detail: null, source: null, favorites: false, paused: false, listKey: "", queueKey: "", pending: null, submitting: false, deletedIds: new Set()};
+const deletion = {id: null, preview: null, busy: false, origin: null};
 const labels = {queued: "待機中", transcribing: "採譜中", awaiting_review: "ABC確認待ち", reviewed: "ABC確認済み", needs_transcription: "採譜が必要", running: "生成中", completed: "完了", truncated: "打ち切りあり", failed: "失敗", interrupted: "中断", cancelled: "キャンセル済み"};
 const draftKey = "yue2-studio-draft-v1";
 const pendingKey = "yue2-studio-submission-v1";
@@ -186,6 +187,73 @@ async function toggleFavorite(job) {
   try { await api(`/api/jobs/${job.id}/favorite`, {method: "PATCH", body: JSON.stringify({favorite: !job.favorite})}); await refresh(); }
   catch (e) { toast(e.message, true); }
 }
+function showDeleteError(message) {
+  $("delete-error").textContent = message;
+  $("delete-error").hidden = false;
+}
+async function openDelete(job, origin) {
+  if (deletion.busy || $("delete-dialog").open) return;
+  deletion.id = job.id; deletion.origin = origin; deletion.preview = null;
+  $("delete-title").textContent = title(job);
+  $("delete-summary").textContent = "削除対象を確認しています…";
+  $("delete-preserved").textContent = "";
+  $("delete-error").hidden = true;
+  $("delete-confirm").disabled = true;
+  $("delete-dialog").showModal();
+  try {
+    const preview = await api(`/api/jobs/${job.id}/deletion`);
+    if (deletion.id !== job.id || !$("delete-dialog").open) return;
+    deletion.preview = preview;
+    $("delete-title").textContent = preview.title || title(job);
+    $("delete-summary").textContent = `この項目の履歴・専用ファイル、譜面版 ${preview.score_versions} 件、MIDI書き出し ${preview.midi_exports} 件、MIDI取込み ${preview.midi_imports} 件を削除します。`;
+    $("delete-preserved").textContent = preview.preserved;
+    $("delete-confirm").disabled = false;
+  } catch (error) {
+    if (deletion.id === job.id && $("delete-dialog").open) {
+      $("delete-summary").textContent = "削除できません";
+      showDeleteError(error.message);
+    }
+  }
+}
+$("delete-cancel").addEventListener("click", () => { if (!deletion.busy) $("delete-dialog").close(); });
+$("delete-dialog").addEventListener("cancel", event => { if (deletion.busy) event.preventDefault(); });
+$("delete-dialog").addEventListener("close", () => { if (!deletion.busy) { deletion.id = null; deletion.preview = null; deletion.origin = null; } });
+$("delete-confirm").addEventListener("click", async () => {
+  if (deletion.busy || !deletion.preview || !deletion.id) return;
+  const id = deletion.id, origin = deletion.origin;
+  deletion.busy = true;
+  $("delete-confirm").disabled = true;
+  $("delete-cancel").disabled = true;
+  $("delete-confirm").textContent = "削除中…";
+  $("delete-error").hidden = true;
+  try {
+    const result = await api(`/api/jobs/${id}`, {method: "DELETE"});
+    state.deletedIds.add(id);
+    state.jobs = state.jobs.filter(item => item.id !== id);
+    state.listKey = ""; state.queueKey = "";
+    if (state.selected === id) {
+      state.selected = null; state.detail = null;
+      $("song-detail").hidden = true;
+      if ($("audio").dataset.jobId === id) {
+        $("audio").pause(); $("audio").removeAttribute("src"); $("audio").load();
+        $("audio").dataset.jobId = ""; $("player-bar").hidden = true;
+      }
+    }
+    renderLibrary();
+    deletion.busy = false;
+    $("delete-dialog").close();
+    await refresh();
+    if (origin === "detail") $("search").focus();
+    toast(result.cleanup_pending ? "削除済み。ファイル整理は次回起動時に再試行します。" : "削除が完了しました。");
+  } catch (error) {
+    showDeleteError(error.message);
+  } finally {
+    deletion.busy = false;
+    $("delete-cancel").disabled = false;
+    $("delete-confirm").textContent = "削除";
+    $("delete-confirm").disabled = !deletion.preview;
+  }
+});
 function renderLibrary() {
   const query = $("search").value.toLocaleLowerCase();
   const rows = state.jobs.filter(j => (!state.favorites || j.favorite) && j.title.toLocaleLowerCase().includes(query));
@@ -204,7 +272,9 @@ function renderLibrary() {
     select.setAttribute("aria-label", `${title(job)} 候補${job.candidate_index} ${labels[job.status]}`);
     select.setAttribute("aria-pressed", String(state.selected === job.id));
     const words = el("span", "track-text");
-    words.append(el("span", "track-title", `${title(job)}${job.engine === "test" ? " ［テスト音声］" : ""}`),
+    const trackTitle = el("span", "track-title", `${title(job)}${job.engine === "test" ? " ［テスト音声］" : ""}`);
+    trackTitle.id = `library-title-${job.id}`;
+    words.append(trackTitle,
       el("span", "track-meta", `${date(job.created_at)} · 候補 ${job.candidate_index}/${job.candidate_count} · ${duration(job.duration)}`),
       el("span", "track-meta", `Seed ${job.seed}`));
     select.append(el("span", "track-art", job.status === "running" ? "⋯" : "♪"), words);
@@ -212,7 +282,12 @@ function renderLibrary() {
     const favorite = el("button", "favorite-button", job.favorite ? "★" : "☆"); favorite.type = "button";
     favorite.setAttribute("aria-label", `${title(job)}を${job.favorite ? "お気に入りから外す" : "お気に入りに追加"}`);
     favorite.setAttribute("aria-pressed", String(job.favorite)); favorite.addEventListener("click", () => toggleFavorite(job));
-    row.append(select, el("span", `track-status status-${job.status}`, labels[job.status]), favorite);
+    const remove = el("button", "delete-song-button"); remove.type = "button";
+    remove.setAttribute("aria-label", "曲を削除"); remove.title = "曲を削除";
+    remove.setAttribute("aria-describedby", trackTitle.id);
+    remove.append(el("span", "", "🗑")); remove.firstChild.setAttribute("aria-hidden", "true");
+    remove.addEventListener("click", () => openDelete(job, "library"));
+    row.append(select, el("span", `track-status status-${job.status}`, labels[job.status]), favorite, remove);
     return row;
   }));
 }
@@ -280,6 +355,7 @@ async function loadTrackLog() {
 }
 $("track-log-details").addEventListener("toggle", () => { if ($("track-log-details").open) loadTrackLog(); });
 $("detail-favorite").addEventListener("click", () => { if (state.detail) toggleFavorite(state.detail); });
+$("detail-delete").addEventListener("click", () => { if (state.detail) openDelete(state.detail, "detail"); });
 $("restore").addEventListener("click", () => {
   const job = state.detail; if (!job) return;
   if (job.cover_id && window.restoreCoverJob) { window.restoreCoverJob(job); return; }
@@ -331,9 +407,17 @@ async function refresh() {
   try {
     const [result, status] = await Promise.all([api("/api/jobs"), api("/api/status")]);
     const previous = state.jobs.find(j => j.id === state.selected);
-    state.jobs = result.jobs; renderQueue(status); renderLibrary();
+    state.jobs = result.jobs.filter(job => !state.deletedIds.has(job.id)); renderQueue(status); renderLibrary();
     const selected = state.jobs.find(j => j.id === state.selected);
     if (selected && (!previous || JSON.stringify(previous) !== JSON.stringify(selected))) await selectSong(selected.id);
+    if (!selected && state.selected) {
+      state.selected = null; state.detail = null; $("song-detail").hidden = true;
+      if ($("audio").dataset.jobId && !state.jobs.some(job => job.id === $("audio").dataset.jobId)) {
+        $("audio").pause(); $("audio").removeAttribute("src"); $("audio").load();
+        $("audio").dataset.jobId = ""; $("player-bar").hidden = true;
+      }
+      state.listKey = ""; renderLibrary();
+    }
     if ($("track-log-details").open) await loadTrackLog();
     $("connection").textContent = "ローカル接続"; $("connection").classList.remove("offline");
   } catch {

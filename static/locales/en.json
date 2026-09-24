@@ -182,6 +182,22 @@
     "キューに登録しています…": "Adding to queue…",
     "曲を生成する ↗": "Generate song ↗",
     "キャンセル": "Cancel",
+    "曲を削除": "Delete song",
+    "削除": "Delete",
+    "削除中…": "Deleting…",
+    "削除対象を確認しています…": "Checking what will be deleted…",
+    "削除できません": "Cannot delete this item",
+    "削除が完了しました。": "Deleted.",
+    "削除済み。ファイル整理は次回起動時に再試行します。": "Deleted. Remaining file cleanup will be retried at the next startup.",
+    "カバー・Motif素材、他の曲、共有ログ、DBバックアップ、外部音源は残ります": "Cover and Motif sources, other songs, shared logs, database backups, and external audio remain.",
+    "待機中・実行中のジョブは削除できません。先に停止またはキャンセルしてください": "A queued or active job cannot be deleted. Stop or cancel it first.",
+    "実行中のジョブは削除できません。完了後に再試行してください": "An active job cannot be deleted. Try again after it finishes.",
+    "この曲のMIDI処理中です。処理終了後に削除してください": "MIDI processing is in progress for this song. Try again after it finishes.",
+    "他の曲がこの譜面版またはMIDIを参照しています。共有データを保護するため削除できません": "Another song references this score or MIDI data. Deletion is blocked to protect shared data.",
+    "他の曲がこの譜面版を参照しています。共有データを保護するため削除できません": "Another song references this score. Deletion is blocked to protect shared data.",
+    "他のMIDI作業がこの曲の譜面または書き出しを参照しています。共有データを保護するため削除できません": "Another MIDI operation references this score or export. Deletion is blocked to protect shared data.",
+    "削除対象の確認に失敗しました。保存先とDBを確認してください": "Could not check this item's files and database records.",
+    "削除処理に失敗しました。保存データを確認してください": "Deletion failed. Check the saved data.",
     "キュー再開・ワーカー再起動": "Resume queue · Restart worker",
     "一致する曲はありません": "No songs match your search",
     "生成した曲を聴き比べて、お気に入りを残せます。": "Compare generated songs and save your favorites.",
@@ -279,6 +295,10 @@
     "MIDI round-trip editing": "MIDI round-trip editing"
   },
   "patterns": [
+    {
+      "source": "^この項目の履歴・専用ファイル、譜面版 (\\d+) 件、MIDI書き出し (\\d+) 件、MIDI取込み (\\d+) 件を削除します。$",
+      "target": "Delete this item's history and dedicated files, $1 score version(s), $2 MIDI export(s), and $3 MIDI import(s)."
+    },
     {
       "source": "^(\\d+) 文字$",
       "target": "$1 characters"

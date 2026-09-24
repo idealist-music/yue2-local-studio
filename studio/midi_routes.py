@@ -244,6 +244,10 @@ def register_midi_routes(app, config, queue, get_job, public_job, submit):
 
     @app.post("/api/score-versions/{version_id}/generate", status_code=202)
     def generate_version(version_id: str, body: GenerateVersionRequest):
+        with queue.store.lifecycle_lock:
+            return generate_version_locked(version_id, body)
+
+    def generate_version_locked(version_id: str, body: GenerateVersionRequest):
         try:
             version = queue.store.get_score_version(version_id)
         except ValueError as exc:
