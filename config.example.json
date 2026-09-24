@@ -1,0 +1,23 @@
+{
+  "python": "/absolute/path/to/YuE/venv/bin/python",
+  "sheetsage_python": null,
+  "sheetsage_model": null,
+  "abc_tools": null,
+  "model": "m-a-p/YuE2-3B",
+  "vae": "m-a-p/YuE2-Vae",
+  "revision": "14fc6c6f146441b1dd6363fcb2e01e82a6914cb7",
+  "vae_revision": "9a94e1d0ea9f8087e98f77fa88df4a4068104d2a",
+  "device": "cuda:0",
+  "pipeline": {
+    "memory_budget_gib": 24.0,
+    "backend": "torch",
+    "quantization": "none",
+    "offload_ar": false,
+    "vae_core_frames": 1024,
+    "verify_hashes": true
+  },
+  "data_dir": "data",
+  "host": "127.0.0.1",
+  "port": 7860,
+  "allowed_hosts": ["127.0.0.1", "localhost", "[::1]"]
+}
