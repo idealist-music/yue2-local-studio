@@ -2,7 +2,7 @@
 
 YuE2 Local Studio is a local web interface for submitting YuE2 music-generation jobs and managing their results. It also includes ABC-based cover workflows, phrase-based motif workflows, and ABC/MIDI round-trip editing. The web application runs in its own lightweight Python environment; YuE2 and SheetSage2 run in separate environments.
 
-The application source does not include model weights, YuE2, SheetSage2, MERT, VAE files, FFmpeg, or the official YuE ABC helper. Obtain these separately from their official sources and configure their local paths. The recorded versions, revisions, and terms-check links are in [External Dependencies](EXTERNAL_DEPENDENCIES.md). No model download is performed automatically by the application.
+The application source does not include model weights, YuE2, SheetSage2, MERT, VAE files, FFmpeg, or the official YuE ABC helper. Obtain these separately from their official sources and configure their local paths. Start with the [English installation guide](INSTALL.md) or [Japanese installation guide](INSTALL.ja.md); recorded versions, revisions, and terms-check links are in [External Dependencies](EXTERNAL_DEPENDENCIES.md). The app runtime does not download models; the optional setup assistant can download pinned external snapshots only after your confirmation.
 
 ## Requirements
 
@@ -16,15 +16,14 @@ The application has no account system or authentication. Keep it on localhost or
 
 ## Setup
 
-From this directory, create the app-only virtual environment and install the dependencies declared for the app:
+Run the interactive setup from this directory. Choose the app-only stage, normal YuE2 generation, or Cover/Motif transcription:
 
 ```bash
 ./setup.sh
+./setup.sh --doctor
 ```
 
-Copy `config.example.json` to `config.local.json`. Update the required absolute path for `python` to the Python executable in your YuE2 environment. Set `model`, `vae`, `device`, and the pinned revisions to values available to that environment. The example revisions are copied from the development configuration; verify that they remain available and permitted before use. Set `abc_tools` to the official YuE `skills/yue2-music/scripts/abc_tools.py` file, or leave it `null` if the helper is in the location derived from the configured YuE Python environment. `sheetsage_python` and `sheetsage_model` can remain `null` until SheetSage2 is installed. Any explicit paths in these fields must be absolute. The app reads `config.local.json`; it does not load `.env` files.
-
-For ABC-based generation, the official YuE ABC helper must be available from a separate YuE installation. Audio transcription and motif workflows additionally need the separately installed SheetSage2 package, weights, MERT files, FFmpeg, and dedicated environment described in [README-COVERS.md](README-COVERS.md). These external components are not included here. Check their exact artifact terms and required access with their providers; users are responsible for obtaining permissions applicable to their intended use. Record the model revisions you install in your local configuration and consult [External Dependencies](EXTERNAL_DEPENDENCIES.md).
+The setup script shows sources, destinations, and size estimates before downloading or installing anything. It detects existing YuE2 environments, keeps existing `config.local.json` values, and suggests the required paths. Model access and FFmpeg system installation may need manual action. The complete staged commands and checks are in [INSTALL.md](INSTALL.md). Check each external artifact's terms and any required access with its provider.
 
 Start the app with:
 
@@ -55,6 +54,6 @@ Databases, logs, uploaded audio, lyrics, and generated outputs are runtime data 
 
 ## Licensing
 
-The original application code in `studio/`, `static/`, the app-specific root scripts and configuration template (`worker.py`, `transcribe_worker.py`, `audio_probe.py`, `run.sh`, `setup.sh`, and `config.example.json`), and `tests/` is licensed under the BSD Zero Clause License (0BSD); see [LICENSE](LICENSE). This grant applies only to that application-authored code. It does not relicense external libraries, YuE/YuE2 source, model code or weights, or separately installed software. [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) lists third-party material included in the release tree; [External Dependencies](EXTERNAL_DEPENDENCIES.md) lists separately installed components and official terms-check sources.
+The original application code in `studio/`, `static/`, the app-specific root scripts and configuration template (`worker.py`, `transcribe_worker.py`, `audio_probe.py`, `run.sh`, `setup.sh`, `setup_assistant.py`, `prepare_sheetsage.py`, and `config.example.json`), and `tests/` is licensed under the BSD Zero Clause License (0BSD); see [LICENSE](LICENSE). This grant applies only to that application-authored code. It does not relicense external libraries, YuE/YuE2 source, model code or weights, or separately installed software. [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) lists third-party material included in the release tree; [External Dependencies](EXTERNAL_DEPENDENCIES.md) lists separately installed components and official terms-check sources.
 
 YuE inference code, YuE2/VAE, SheetSage2, MERT, and other model files have separate terms from their providers. The app publisher does not warrant that external terms permit a user's particular purpose or that any required permission has been obtained. Users must review the exact artifact terms and obtain necessary permissions. Do not infer commercial model rights from the app's 0BSD license. The app license does not assign rights to user inputs or generated music: generated audio is not automatically 0BSD or public domain. Check model terms, input rights, and applicable law separately.

@@ -22,23 +22,11 @@
 
 音声の採譜には、SheetSage2専用のPython環境を使用します。ワーカーはローカルの `SheetSage2.modeling_sheetsage2.SheetSage2Model` パッケージを直接インポートし、`from_pretrained(..., local_files_only=True)` を呼び出します。Transformersの `AutoModel.from_pretrained(...)` を使ったセットアップだけでは、このワーカーが必要とするパッケージのインポート条件を満たしません。
 
-SheetSage2は公式配布元の現行手順に従ってインストールしてください。対応するPythonソースパッケージとモデル重み、MERT-v2-FullSongのファイル、依存パッケージ、アクセス要件、ライセンス条件を入手・確認してください。依存関係が異なるため、SheetSage2用とYuE2用の環境は分けてください。このリポジトリにはSheetSage2のソース、モデル重み、MERTのファイルを含めておらず、未検証のダウンロード手順や変換コマンドも掲載していません。動作を確認したSheetSage2のrevisionと公式の利用条件へのリンクは [EXTERNAL_DEPENDENCIES.md](EXTERNAL_DEPENDENCIES.md) に記載しています。この記載はライセンス適合を保証するものではありません。
-
-ワーカーがSheetSage2のPythonパッケージを見つけられるようにしてください。パッケージの配置先は、設定したモデルディレクトリの内部（そのディレクトリの名前が `SheetSage2` の場合）、設定したモデルディレクトリの隣の `SheetSage2/`、またはアプリの `models/SheetSage2/` のいずれかです。公開用ディレクトリにはモデルディレクトリを作成していません。`config.local.json` に絶対パスを設定します。
-
-```json
-{
-  "sheetsage_python": "/absolute/path/to/sheetsage-venv/bin/python",
-  "sheetsage_model": "/absolute/path/to/local/sheetsage-model",
-  "abc_tools": "/absolute/path/to/YuE/skills/yue2-music/scripts/abc_tools.py"
-}
-```
-
-モデルはローカルディレクトリに置き、`config.json` と `SheetSage2Model.from_pretrained` に必要なファイルを含める必要があります。ワーカーはオフラインで動作します。使用したソースとモデルのrevisionを記録してください。UIの設定状態表示はファイルの有無だけを確認するため、その環境でモデルを読み込めることまでは保証しません。ワーカーはモデルの `transcribe` メソッドが `melody_only` に対応しているか確認します。
+`./setup.sh --stage cover` と[日本語導入ガイド](INSTALL.ja.md)を使用してください。別venv、公式SheetSage2・MERTの固定revision、アクセス承認、ローカル統合モデルの作成、`sheetsage_python`／`sheetsage_model` の設定、直接クラスのロード確認をまとめています。ワーカーには統合モデルの隣にある `SheetSage2/` ソースと `melody_only` 対応が必要です。UIの「設定済み」はファイル存在確認であり、重みのロード成功を保証しません。対象revisionの条件確認先は [EXTERNAL_DEPENDENCIES.md](EXTERNAL_DEPENDENCIES.md) にあります。
 
 ## Motif機能で必要なFFmpeg
 
-Motif機能で音声を切り出すコードは、現在 `/usr/bin/ffmpeg` を直接呼び出します。説明どおりにMotif機能を使用するには、FFmpeg 6.1とその共有ライブラリをこのパスで利用できるようにしてください。カバーの採譜自体は、このFFmpeg呼び出しを使用しません。現在のリリースのソースではFFmpegのパスは固定されています。
+Motifの音声切り出しは現在 `/usr/bin/ffmpeg` 固定です。FFmpeg 6.1と共有ライブラリの確認は[日本語導入ガイド](INSTALL.ja.md)を参照してください。Coverの採譜はこの固定パスを直接使いませんが、SheetSage2の音声処理に依存します。
 
 ## 保存データとプライバシー
 

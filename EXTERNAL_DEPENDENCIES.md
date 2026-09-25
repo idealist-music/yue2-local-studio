@@ -6,6 +6,10 @@ versions below are the versions/revisions used in the development and
 functional checks recorded for this application; they are not a promise that
 other versions work, a license-compliance review, or a grant of rights.
 
+For staged installation and read-only diagnostics, use [INSTALL.md](INSTALL.md)
+or [INSTALL.ja.md](INSTALL.ja.md). This file remains the version and terms
+reference; the installation steps are maintained in those guides.
+
 The application publisher does not warrant that an external component's terms
 permit a particular user's purpose, use, or distribution. Before downloading,
 installing, or using a component, the user must review the applicable terms at
@@ -35,8 +39,9 @@ must inspect the actual packages and their notices.
 
 ## YuE2 generation environment
 
-YuE inference runs in its own Python environment. The app does not download
-YuE code or weights. For installation and supported invocation, consult the
+YuE inference runs in its own Python environment. The app runtime does not
+download YuE code or weights; the opt-in setup assistant can obtain them from
+their official sources after explicit confirmation. For installation and supported invocation, consult the
 [official YuE repository](https://github.com/multimodal-art-projection/YuE)
 and its [generation guide](https://github.com/multimodal-art-projection/YuE/blob/main/docs/generation.md).
 The observed environment was:

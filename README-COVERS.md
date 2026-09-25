@@ -22,23 +22,11 @@ Configure `abc_tools` in `config.local.json` if the helper is not at the locatio
 
 Audio transcription uses a separate SheetSage2 Python environment. The worker imports the local `SheetSage2.modeling_sheetsage2.SheetSage2Model` package directly and calls `from_pretrained(..., local_files_only=True)`. A Transformers `AutoModel.from_pretrained(...)` setup command alone does not satisfy this worker's package import requirement.
 
-Install SheetSage2 from its official distribution using that distribution's current instructions. Obtain and review the matching Python source package and model weights, MERT-v2-FullSong files, dependencies, access requirements, and license terms. Keep the SheetSage2 environment separate from YuE2 because their dependencies differ. This repository does not include SheetSage2 source, model weights, or MERT files and does not provide an unverified download or conversion command. The functionally checked SheetSage2 revision and official terms-check links are listed in [EXTERNAL_DEPENDENCIES.md](EXTERNAL_DEPENDENCIES.md); this does not certify license compliance.
-
-The worker must be able to find the SheetSage2 Python package either inside the configured model directory (when that directory is named `SheetSage2`), beside the configured model directory as a `SheetSage2/` directory, or at this app's `models/SheetSage2/` path. The release tree intentionally does not create that model directory. Configure absolute paths in `config.local.json`:
-
-```json
-{
-  "sheetsage_python": "/absolute/path/to/sheetsage-venv/bin/python",
-  "sheetsage_model": "/absolute/path/to/local/sheetsage-model",
-  "abc_tools": "/absolute/path/to/YuE/skills/yue2-music/scripts/abc_tools.py"
-}
-```
-
-The model must be a local directory with a `config.json` and the files required by `SheetSage2Model.from_pretrained`. The worker runs offline. Keep a record of the source and model revisions used. The UI's configured status only checks for files; it does not prove the environment can load the model. The worker checks that the model's `transcribe` method supports `melody_only`.
+Use `./setup.sh --stage cover` and the staged [installation guide](INSTALL.md). The guide covers the separate venv, pinned official SheetSage2 and MERT downloads, interactive access handling, local standalone model creation, `sheetsage_python`/`sheetsage_model`, and the optional direct-class load check. The worker needs the local `SheetSage2/` source beside the standalone model and `melody_only` support. The UI's configured state checks only files; it does not prove the weights load. Record actual revisions and review terms in [EXTERNAL_DEPENDENCIES.md](EXTERNAL_DEPENDENCIES.md).
 
 ## FFmpeg requirement for Motif
 
-The Motif audio-clipping code currently invokes `/usr/bin/ffmpeg` directly. Install FFmpeg 6.1 and its shared libraries at that path for the documented Motif workflow. Cover transcription itself does not use this FFmpeg invocation. The FFmpeg path is fixed in the current release source.
+The Motif audio-clipping code currently invokes `/usr/bin/ffmpeg` directly. FFmpeg 6.1 and its shared libraries are documented in [INSTALL.md](INSTALL.md). Cover transcription does not use this fixed path but uses SheetSage2's audio stack. The FFmpeg path is fixed in the current release source.
 
 ## Saved data and privacy
 
