@@ -17,7 +17,7 @@ The app invokes YuE's `skills/yue2-music/scripts/abc_tools.py` from the
 separately installed YuE distribution, and imports the separately installed
 SheetSage2 Python package at runtime. Neither implementation is copied into
 this release tree. Their distribution sources and terms are listed in
-[EXTERNAL_DEPENDENCIES.md](EXTERNAL_DEPENDENCIES.md), not relicensed by this
+[docs/EXTERNAL_DEPENDENCIES.md](docs/EXTERNAL_DEPENDENCIES.md), not relicensed by this
 application's license.
 
 ## Application license scope
