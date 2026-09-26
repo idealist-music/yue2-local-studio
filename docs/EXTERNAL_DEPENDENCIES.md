@@ -1,5 +1,7 @@
 # External dependencies and setup conditions
 
+[日本語](EXTERNAL_DEPENDENCIES.ja.md)
+
 This guide covers software and model files that are **not included** in this
 release and must be obtained and installed separately by each user. The
 versions below are the versions/revisions used in the development and
@@ -112,35 +114,3 @@ vendor notices you install.
 - NVIDIA CUDA and driver components are separately installed and are not
   included. Consult the [CUDA Toolkit terms](https://docs.nvidia.com/cuda/eula/index.html)
   and the terms for the exact driver/toolkit distribution.
-
-## Japanese / 日本語
-
-この公開物には、SheetSage2、MERT、YuE2、YuE2-VAE、FFmpeg、各Python環境や
-モデルファイルは含まれません。利用者が各公式配布元から別途取得・導入して
-ください。上記の版・revisionはこのアプリで記録された動作確認情報であり、
-ライセンス適合、特定目的への利用許諾、または別の版での動作を保証するもの
-ではありません。
-
-利用者は、取得・導入・利用の前に、対象ファイルの正確なrevisionに適用される
-条件、アクセス要件、利用目的への適用可能性を公式配布元で確認し、必要な許諾を
-取得してください。この案内は第三者ライセンス条件を免除・変更しません。
-
-SheetSage2の `488abe28ef4db3dbb056da19cb49d80f4b14bc61` は、アプリ所有者から提示
-された**動作確認済みrevision**として記録しています。ライセンス適合確認済み
-という意味ではありません。提示revisionの[公式ページ](https://huggingface.co/m-a-p/SheetSage2/commit/488abe28ef4db3dbb056da19cb49d80f4b14bc61)
-にはCC BY-NC 4.0の表示がありますが、利用者自身が対象コード・重みへの適用範囲と
-必要な許諾を確認してください。
-
-| 外部依存物 | 記録した動作確認版・revision | 公式配布元・条件確認先 |
-|---|---|---|
-| YuE推論コード `yue2-infer` | 0.1.6 | [YuE](https://github.com/multimodal-art-projection/YuE)、[LICENSE](https://github.com/multimodal-art-projection/YuE/blob/main/LICENSE)、[NOTICE](https://github.com/multimodal-art-projection/YuE/blob/main/NOTICE) |
-| YuE2-3B | `14fc6c6f146441b1dd6363fcb2e01e82a6914cb7` | [対象revision](https://huggingface.co/m-a-p/YuE2-3B/commit/14fc6c6f146441b1dd6363fcb2e01e82a6914cb7) |
-| YuE2-VAE | `9a94e1d0ea9f8087e98f77fa88df4a4068104d2a` | [対象revision](https://huggingface.co/m-a-p/YuE2-Vae/tree/9a94e1d0ea9f8087e98f77fa88df4a4068104d2a) |
-| SheetSage2 | `488abe28ef4db3dbb056da19cb49d80f4b14bc61`（動作確認済み） | [対象revision](https://huggingface.co/m-a-p/SheetSage2/commit/488abe28ef4db3dbb056da19cb49d80f4b14bc61) |
-| MERT-v2-FullSong | `d8ba1c745e733b3908ce6ad16ebeb17ac7600a42` | [対象revisionと条件](https://huggingface.co/m-a-p/MERT-v2-FullSong/commit/d8ba1c745e733b3908ce6ad16ebeb17ac7600a42) |
-| FFmpeg | 6.1 | [公式配布](https://ffmpeg.org/download.html)、[ライセンス情報](https://ffmpeg.org/legal.html) |
-| NVIDIA CUDA／ドライバー | ホスト側で別途導入。版は環境依存 | [CUDA利用条件](https://docs.nvidia.com/cuda/eula/index.html) |
-
-アプリの0BSDライセンスは、これら外部依存物やモデル、入力素材、生成音声の権利を
-付与するものではありません。生成音声も自動的に0BSDまたはパブリックドメインに
-なるものではありません。

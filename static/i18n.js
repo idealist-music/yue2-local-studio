@@ -19,9 +19,12 @@
   const textNodes = new Set();
   const elements = new Set();
   let language = localStorage.getItem("yue2-language") === "en" ? "en" : "ja";
-  const translate = (value) => {
+  const translate = (value, depth = 0) => {
     const text = String(value);
-    const exact = resources[language].strings[text];
+    if (language === "en" && depth < 3 && text.includes("\n")) {
+      return text.split("\n").map((line) => translate(line, depth + 1)).join("\n");
+    }
+    const exact = resources[language].strings[text] ?? resources[language].messages?.[text];
     if (exact !== undefined) return exact;
     for (const pattern of resources[language].patterns || []) {
       const expression = new RegExp(pattern.source);
@@ -29,7 +32,7 @@
       if (match) return text.replace(expression, () => pattern.target.replace(/\$(\d+|&)/g, (token, index) => {
         if (index === "&") return match[0];
         const part = match[Number(index)] ?? token;
-        return resources[language].strings[part] ?? part;
+        return translate(part, depth + 1);
       }));
     }
     return text;
@@ -93,7 +96,13 @@
       button.setAttribute("aria-label", translate("言語を切り替え"));
     }
   }
-  window.I18n = {get language() { return language; }, t: translate, apply};
+  const localizeTree = (value) => {
+    if (typeof value === "string") return translate(value);
+    if (Array.isArray(value)) return value.map(localizeTree);
+    if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, localizeTree(item)]));
+    return value;
+  };
+  window.I18n = {get language() { return language; }, t: translate, apply, localizeTree};
   const nativeAlert = window.alert.bind(window), nativeConfirm = window.confirm.bind(window);
   window.alert = (message) => nativeAlert(translate(message));
   window.confirm = (message) => nativeConfirm(translate(message));

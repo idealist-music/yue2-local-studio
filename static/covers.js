@@ -43,7 +43,8 @@ function showCover(data, fill = true) {
   $("cover-source-name").textContent = `素材: ${data.filename || data.source_conditions?.title || data.title || "無題"}${data.source_id ? " · ライブラリの元曲は変更しません" : ""}`;
   $("cover-status").textContent = `${labels[data.status] || data.status}${data.error ? ` · ${data.error}` : ""}`;
   $("cover-warnings").hidden = !data.warnings?.length;
-  $("cover-warnings").textContent = data.warnings?.length ? `採譜警告: ${JSON.stringify(data.warnings)}。ABCを確認・修正してください。` : "";
+  const warnings = window.I18n?.localizeTree(data.warnings || []) ?? data.warnings;
+  $("cover-warnings").textContent = data.warnings?.length ? `採譜警告: ${JSON.stringify(warnings)}。ABCを確認・修正してください。` : "";
   coverAudio("cover-source-audio", data.files.preview || data.files.source);
   $("cover-original-download").hidden = !data.files.original;
   if (data.files.original) $("cover-original-download").href = `${data.files.original}?download=true`;

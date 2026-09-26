@@ -396,7 +396,7 @@ $("player-stop").addEventListener("click", () => { $("audio").pause(); $("audio"
 $("audio").addEventListener("error", () => { $("audio-error").hidden = false; });
 $("diagnostics-open").addEventListener("click", async () => {
   $("diagnostics").showModal(); $("diagnostics-content").textContent = "確認しています…";
-  try { $("diagnostics-content").textContent = JSON.stringify(await api("/api/diagnostics"), null, 2); }
+  try { const diagnostic = await api("/api/diagnostics"); $("diagnostics-content").textContent = JSON.stringify(window.I18n?.localizeTree(diagnostic) ?? diagnostic, null, 2); }
   catch (e) { $("diagnostics-content").textContent = e.message; }
 });
 $("diagnostics-close").addEventListener("click", () => $("diagnostics").close());

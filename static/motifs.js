@@ -27,7 +27,7 @@
       $("motif-seed").value = current.conditions.seed || "0";
       const f = current.files || {};
       if (f.motif) { $("motif-abc").value = "採譜ABC: " + f.motif; }
-      if (current.stage?.plan?.analysis) $("motif-analysis").textContent = JSON.stringify(current.stage.plan.analysis, null, 2);
+      if (current.stage?.plan?.analysis) $("motif-analysis").textContent = JSON.stringify(window.I18n?.localizeTree(current.stage.plan.analysis) ?? current.stage.plan.analysis, null, 2);
     }
   }
   async function load(id) { current = await json(`/api/motifs/${id}`); update(); }

@@ -22,7 +22,7 @@
 
 音声の採譜には、SheetSage2専用のPython環境を使用します。ワーカーはローカルの `SheetSage2.modeling_sheetsage2.SheetSage2Model` パッケージを直接インポートし、`from_pretrained(..., local_files_only=True)` を呼び出します。Transformersの `AutoModel.from_pretrained(...)` を使ったセットアップだけでは、このワーカーが必要とするパッケージのインポート条件を満たしません。
 
-`./setup.sh --stage cover` と[日本語導入ガイド](INSTALL.ja.md)を使用してください。別venv、公式SheetSage2・MERTの固定revision、アクセス承認、ローカル統合モデルの作成、`sheetsage_python`／`sheetsage_model` の設定、直接クラスのロード確認をまとめています。ワーカーには統合モデルの隣にある `SheetSage2/` ソースと `melody_only` 対応が必要です。UIの「設定済み」はファイル存在確認であり、重みのロード成功を保証しません。対象revisionの条件確認先は [EXTERNAL_DEPENDENCIES.md](EXTERNAL_DEPENDENCIES.md) にあります。
+`./setup.sh --stage cover` と[日本語導入ガイド](INSTALL.ja.md)を使用してください。別venv、公式SheetSage2・MERTの固定revision、アクセス承認、ローカル統合モデルの作成、`sheetsage_python`／`sheetsage_model` の設定、直接クラスのロード確認をまとめています。ワーカーには統合モデルの隣にある `SheetSage2/` ソースと `melody_only` 対応が必要です。UIの「設定済み」はファイル存在確認であり、重みのロード成功を保証しません。対象revisionの条件確認先は [EXTERNAL_DEPENDENCIES.ja.md](EXTERNAL_DEPENDENCIES.ja.md) にあります。
 
 ## Motif機能で必要なFFmpeg
 
@@ -32,4 +32,4 @@ Motifの音声切り出しは現在 `/usr/bin/ffmpeg` 固定です。FFmpeg 6.1�
 
 元音源、プレビュー音声、ABC譜、採譜結果、ジョブのメタデータは、設定された `data_dir` 以下に保存されます。ユーザーの音声や歌詞が含まれる場合があります。実行時データディレクトリは非公開でバックアップし、ソースの公開物に加えたり、公開Issueに添付したりしないでください。
 
-モデルと補助ツールの利用条件は、アプリのライセンスとは別に適用されます。利用者は実際に使用する配布物の条件を確認し、配布元から必要な許諾を得てください。アプリの公開者は、外部コンポーネントが個々の利用目的に対して許可されていることを保証しません。この公開用ディレクトリにモデルファイルは含まれません。詳しくは [EXTERNAL_DEPENDENCIES.md](EXTERNAL_DEPENDENCIES.md) を参照してください。
+モデルと補助ツールの利用条件は、アプリのライセンスとは別に適用されます。利用者は実際に使用する配布物の条件を確認し、配布元から必要な許諾を得てください。アプリの公開者は、外部コンポーネントが個々の利用目的に対して許可されていることを保証しません。この公開用ディレクトリにモデルファイルは含まれません。詳しくは [EXTERNAL_DEPENDENCIES.ja.md](EXTERNAL_DEPENDENCIES.ja.md) を参照してください。

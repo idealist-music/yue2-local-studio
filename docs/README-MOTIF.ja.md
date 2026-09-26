@@ -13,4 +13,4 @@ Motif Song は、元音源の指定区間だけを SheetSage2 で採譜し、Sty
 
 SheetSage2 は `sheetsage_python` と `sheetsage_model` で指定した専用環境を使います。YuE2環境の依存関係は変更しません。
 
-音源区間の切り出しには FFmpeg 6.1 と共有ライブラリが必要です。現行コードは `/usr/bin/ffmpeg` を直接呼び出します。FFmpegは同梱しません。公式の配布・条件確認先は[外部依存物ガイド](EXTERNAL_DEPENDENCIES.md)を参照してください。
+音源区間の切り出しには FFmpeg 6.1 と共有ライブラリが必要です。現行コードは `/usr/bin/ffmpeg` を直接呼び出します。FFmpegは同梱しません。公式の配布・条件確認先は[外部依存物ガイド](EXTERNAL_DEPENDENCIES.ja.md)を参照してください。

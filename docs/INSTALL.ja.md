@@ -1,6 +1,6 @@
 # Linux／WSL2 Ubuntuへの導入
 
-[English](INSTALL.md) · [外部依存物の版と条件](EXTERNAL_DEPENDENCIES.md)
+[English](INSTALL.md) · [外部依存物の版と条件](EXTERNAL_DEPENDENCIES.ja.md)
 
 `./setup.sh` は対話形式で「アプリのみ」「YuE2通常生成まで」「SheetSage2を使うCover・Motifまで」を選べます。取得・導入の前に、配布元・導入先・容量目安・作業内容を示して確認します。`./setup.sh --doctor` は環境を変更せず、段階ごとに `OK`／`MISSING`／`MANUAL` を表示します。インストーラーは `sudo`、`apt`、システム領域への書き込みをしません。既存の `config.local.json`、モデル、完成済みvenvは上書きしません。ダウンロードが中断した場合は原因を解消して同じ段階を再実行します。外部ファイルはアプリのディレクトリ外に置いてください。
 
@@ -56,4 +56,4 @@ Ubuntu／WSL2では管理者が `sudo apt update` と `sudo apt install ffmpeg` 
 ./run.sh
 ```
 
-ロード確認は任意で、明示確認後に行います。時間とメモリを多く使用します。SheetSage2のCPUロード成功はGPU採譜や音楽品質の保証ではありません。通常の診断結果とロード確認結果は別に扱ってください。既定ポートは7860です。操作とLAN設定は[README.ja.md](README.ja.md)、Coverの流れは[README-COVERS.ja.md](README-COVERS.ja.md)、外部依存物の条件は[EXTERNAL_DEPENDENCIES.md](EXTERNAL_DEPENDENCIES.md)を参照してください。
+ロード確認は任意で、明示確認後に行います。時間とメモリを多く使用します。SheetSage2のCPUロード成功はGPU採譜や音楽品質の保証ではありません。通常の診断結果とロード確認結果は別に扱ってください。既定ポートは7860です。操作とLAN設定は[README.ja.md](../README.ja.md)、Coverの流れは[README-COVERS.ja.md](README-COVERS.ja.md)、外部依存物の条件は[EXTERNAL_DEPENDENCIES.ja.md](EXTERNAL_DEPENDENCIES.ja.md)を参照してください。

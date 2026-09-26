@@ -56,4 +56,4 @@ If `config.local.json` already exists, the installer prints suggested paths and 
 ./run.sh
 ```
 
-Load checks are optional, explicit, and can take minutes and much memory. The SheetSage2 CPU load confirms the package and standalone weights but does not prove GPU transcription or musical accuracy. Diagnostics report file/package readiness separately from these load checks. The app is on port 7860 by default. See [README.md](README.md) for use and network settings, [README-COVERS.md](README-COVERS.md) for the Cover workflow, and [EXTERNAL_DEPENDENCIES.md](EXTERNAL_DEPENDENCIES.md) for versions and terms links.
+Load checks are optional, explicit, and can take minutes and much memory. The SheetSage2 CPU load confirms the package and standalone weights but does not prove GPU transcription or musical accuracy. Diagnostics report file/package readiness separately from these load checks. The app is on port 7860 by default. See [README.md](../README.md) for use and network settings, [README-COVERS.md](README-COVERS.md) for the Cover workflow, and [EXTERNAL_DEPENDENCIES.md](EXTERNAL_DEPENDENCIES.md) for versions and terms links.
