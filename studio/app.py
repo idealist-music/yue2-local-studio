@@ -19,6 +19,8 @@ from .config import ROOT
 from .queue import Queue
 from .storage import FILES, ID_RE, dumps, song_request
 
+__version__ = "0.5.0"
+
 MAX_SEED = 2**63
 
 
@@ -73,7 +75,8 @@ def has_chords(abc):
 def create_app(config):
     queue = Queue(config)
     store = queue.store
-    index_html = (ROOT / "static" / "index.html").read_bytes()
+    index_html = (ROOT / "static" / "index.html").read_bytes().replace(
+        b"@@VERSION@@", __version__.encode("ascii"))
 
     @asynccontextmanager
     async def lifespan(app):
