@@ -186,6 +186,56 @@ class SetupAssistantTests(unittest.TestCase):
         self.assertTrue(setup.matches_pin("2.10.0+cu128", "2.10.0"))
         self.assertFalse(setup.matches_pin("2.7.0+cu126", "2.8.0"))
 
+    def test_sheet_pins_report_seeded_setuptools_for_confirmed_reconciliation(self):
+        changes = setup.pinned_package_changes(
+            {"setuptools": "59.6.0", "torch": "2.8.0+cu126"},
+            {"setuptools": "78.1.1", "torch": "2.8.0"},
+        )
+        self.assertEqual(changes, {"setuptools": ("59.6.0", "78.1.1")})
+        self.assertEqual(setup.pinned_package_changes({}, {"torch": "2.8.0"}),
+                         {"torch": (None, "2.8.0")})
+
+    def test_sheet_stage_confirms_seeded_setuptools_reconciliation(self):
+        external = self.root / "external"
+        venv = external / "sheet-venv"
+        python = venv / "bin/python"
+        hf = venv / "bin/hf"
+        python.parent.mkdir(parents=True)
+        python.write_text("test")
+        hf.write_text("test")
+        source = external / "SheetSage2"
+        source.mkdir(parents=True)
+        (source / "__init__.py").write_text("")
+        (source / "modeling_sheetsage2.py").write_text("# test\n")
+        (source / "requirements.txt").write_text(
+            "torch==2.8.0\ntorchaudio==2.8.0\ntransformers==4.45.2\n"
+            "huggingface-hub==0.36.0\nsafetensors==0.5.3\nnumpy==1.24.3\n"
+            "scipy==1.13.1\nmir_eval==0.8.2\npretty_midi==0.2.10\n"
+            "mido==1.3.3\nsetuptools==78.1.1\n")
+        mert = external / "MERT-v2-FullSong"
+        mert.mkdir()
+        for snapshot in (source, mert):
+            (snapshot / "config.json").write_text("{}")
+            (snapshot / "model.safetensors").write_bytes(b"test only")
+        config = self.app / "config.local.json"
+        config.write_text(json.dumps({"python": str(external / "YuE/venv/bin/python"),
+                                      "sheetsage_python": str(python)}))
+        installer = RecordingInstaller(self.app, config, external)
+        confirmations = []
+        def confirm(source_text, target, size, action):
+            confirmations.append(action)
+            return not action.startswith("merge MERT parent")
+        installer.confirm = confirm
+        probe = {"python": [3, 10, 12], "packages": {"huggingface-hub": "0.36.0", "setuptools": "59.6.0"}}
+        with patch.object(setup.shutil, "which", return_value="/usr/bin/python3.11"), \
+             patch.object(setup, "python_probe", return_value=probe), \
+             patch.object(setup, "sheet_import_probe", return_value=(True, "OK")):
+            self.assertIsNone(installer.sheet_stage())
+        self.assertTrue(any("replace setuptools 59.6.0 with pinned 78.1.1" in item for item in confirmations))
+        pip_commands = [command for command, _ in installer.commands if command[1:3] == ["-m", "pip"]]
+        self.assertEqual(len(pip_commands), 2)
+        self.assertIn("requirements.txt", pip_commands[-1][-1])
+
     def test_system_destinations_are_refused(self):
         with self.assertRaises(RuntimeError):
             setup.Installer(self.app, external=Path("/usr/local/yue-test"))

@@ -92,6 +92,12 @@ def matches_pin(installed, pin):
     return bool(installed and installed.split("+", 1)[0] == pin)
 
 
+def pinned_package_changes(packages, pins):
+    """Return pins that are missing or differ from the installed version."""
+    return {name: (packages.get(name), version) for name, version in pins.items()
+            if not matches_pin(packages.get(name), version)}
+
+
 def pinned_requirements(path):
     """Read simple exact pins from the reviewed SheetSage2 requirements file."""
     pins = {}
@@ -436,13 +442,22 @@ class Installer:
         if not all(pins.get(name) == version for name, version in (("torch", "2.8.0"), ("torchaudio", "2.8.0"),
                                                                     ("transformers", "4.45.2"), ("numpy", "1.24.3"))):
             raise RuntimeError("Unexpected SheetSage2 requirements; no package changes were made")
-        mismatched = {name: (packages[name], version) for name, version in pins.items()
-                      if name in packages and not matches_pin(packages[name], version)}
+        changes = pinned_package_changes(packages, pins)
+        # Fresh Ubuntu Python venvs may seed setuptools 59.6.0, while the
+        # reviewed SheetSage2 requirements pin setuptools 78.1.1. Reconcile
+        # that bootstrap-package difference only through the confirmation
+        # below; retain the manual-review guard for runtime package conflicts.
+        mismatched = {name: pair for name, pair in changes.items()
+                      if name != "setuptools" and pair[0] is not None}
         if mismatched:
             raise RuntimeError(f"Existing SheetSage2 venv has different pinned packages: {mismatched}; review manually")
-        if any(not matches_pin(packages.get(name), version) for name, version in pins.items()):
+        if changes:
+            action = "install missing SheetSage2 requirements pinned in requirements.txt"
+            setuptools_change = changes.get("setuptools")
+            if setuptools_change and setuptools_change[0]:
+                action += f"; replace setuptools {setuptools_change[0]} with pinned {setuptools_change[1]}"
             if not self.confirm("https://download.pytorch.org/whl/cu126 and SheetSage2/requirements.txt", venv_dir,
-                                "several GiB", "install missing torch/torchaudio 2.8.0 CUDA 12.6 and pinned SheetSage2 requirements"):
+                                "several GiB", action):
                 return None
             protect_write_target(venv_dir)
             if not matches_pin(packages.get("torch"), "2.8.0") or not matches_pin(packages.get("torchaudio"), "2.8.0"):

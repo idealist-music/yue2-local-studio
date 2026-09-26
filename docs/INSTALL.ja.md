@@ -26,7 +26,7 @@ Hugging Faceの既存キャッシュは、指定revisionと完全な重みが確
 
 ## 2. 音源からのCover・Motif採譜
 
-音源から採譜するときだけ `./setup.sh --stage cover` を使います。ABCを直接使うCoverにはYuE2とABC補助ツールが必要ですが、SheetSage2は不要です。スクリプトはPython 3.10／3.11の別venvを作り、公式[SheetSage2](https://huggingface.co/m-a-p/SheetSage2)の動作確認済みrevision `488abe28ef4db3dbb056da19cb49d80f4b14bc61`（約0.25 GiB）と、指定された[MERT-v2-FullSong](https://huggingface.co/m-a-p/MERT-v2-FullSong)のrevision `d8ba1c745e733b3908ce6ad16ebeb17ac7600a42`（約2.6 GiB）を取得します。[公式SheetSage2手順](https://huggingface.co/m-a-p/SheetSage2/blob/main/README.md)に合わせてCUDA 12.6向けPyTorch／TorchAudio 2.8.0と、モデルの `requirements.txt` を専用venvに入れます。ワーカー用の統合モデルを作る際には、さらに約3 GiBのディスク容量と十分な空きRAMが必要です。
+音源から採譜するときだけ `./setup.sh --stage cover` を使います。ABCを直接使うCoverにはYuE2とABC補助ツールが必要ですが、SheetSage2は不要です。スクリプトはPython 3.10／3.11の別venvを作り、公式[SheetSage2](https://huggingface.co/m-a-p/SheetSage2)の動作確認済みrevision `488abe28ef4db3dbb056da19cb49d80f4b14bc61`（約0.25 GiB）と、指定された[MERT-v2-FullSong](https://huggingface.co/m-a-p/MERT-v2-FullSong)のrevision `d8ba1c745e733b3908ce6ad16ebeb17ac7600a42`（約2.6 GiB）を取得します。[公式SheetSage2手順](https://huggingface.co/m-a-p/SheetSage2/blob/main/README.md)に合わせてCUDA 12.6向けPyTorch／TorchAudio 2.8.0と、モデルの `requirements.txt` を専用venvに入れます。venv作成時に初期導入された `setuptools` が固定版と異なる場合は、差分を表示して確認後に揃えます。ワーカー用の統合モデルを作る際には、さらに約3 GiBのディスク容量と十分な空きRAMが必要です。
 
 Hugging Faceがアクセスを拒否した場合は、両モデルの配布ページで必要な承認を済ませ、`<sheetsage-venv>/bin/hf auth login` を対話的に実行してから同じ段階を再実行してください。トークンはコマンド行、ログ、公開リポジトリ、`config.local.json` に書かないでください。各モデルの対象revisionに適用される条件と、利用目的に必要な許諾は利用者が確認します。動作確認済みrevisionという記録はライセンス適合の保証ではありません。
 
