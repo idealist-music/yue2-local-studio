@@ -69,4 +69,4 @@ Ubuntu／WSL2では管理者がディストリビューションのパッケー�
 ./run.sh
 ```
 
-ロード確認は任意で、明示確認後に行います。時間とメモリを多く使用します。SheetSage2のCPUロード成功はGPU採譜や音楽品質の保証ではありません。通常の診断結果とロード確認結果は別に扱ってください。既定ポートは7860です。操作とLAN設定は[README.ja.md](../README.ja.md)、Coverの流れは[README-COVERS.ja.md](README-COVERS.ja.md)、外部依存物の条件は[EXTERNAL_DEPENDENCIES.ja.md](EXTERNAL_DEPENDENCIES.ja.md)を参照してください。
+ロード確認は任意で、明示確認後に行います。時間とメモリを多く使用します。SheetSage2のCPUロード成功はGPU採譜や音楽品質の保証ではありません。通常の診断結果とロード確認結果は別に扱ってください。既定ポートは7860です。操作は[README.ja.md](../README.ja.md)、全設定項目とネットワーク設定は[CONFIG.ja.md](CONFIG.ja.md)、Coverの流れは[README-COVERS.ja.md](README-COVERS.ja.md)、外部依存物の条件は[EXTERNAL_DEPENDENCIES.ja.md](EXTERNAL_DEPENDENCIES.ja.md)を参照してください。

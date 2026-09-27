@@ -16,7 +16,7 @@ The application has no account system or authentication. Keep it on localhost or
 
 ## Setup
 
-Run the interactive setup from this directory. Choose app only, normal YuE2 generation, or the additional SheetSage2 setup for Cover/Motif transcription:
+Run the interactive setup from this directory. Choose app only, normal YuE2 generation, or the additional SheetSage2 setup for Cover/Motif transcription. Configuration key meanings, defaults, path rules, and LAN settings are described in the [configuration guide](docs/CONFIG.md):
 
 ```bash
 ./setup.sh
