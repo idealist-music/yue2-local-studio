@@ -34,7 +34,7 @@ Hugging Faceがアクセスを拒否した場合は、両モデルの配布ペ�
 
 ## 3. FFmpegとシステム側の確認
 
-SheetSage2の公式音声手順ではFFmpeg 6.1と対応する共有ライブラリが必要です。現行Motifの区間切り出しは **`/usr/bin/ffmpeg` 固定**です。別の場所に実行ファイルを置いても、そのままではMotifの切り出しは動きません。診断はその固定パスの版と `ldd` の不足ライブラリを確認します。Coverの音源採譜はSheetSage2側の音声処理に依存します。ABC直接入力のCoverではFFmpegを呼びません。
+**音源からのCover採譜とMotifには、共有ライブラリ付きのFFmpeg 6.1.xが必要です。** 現在の診断は6.1系列だけを認識し、`ldd`による共有ライブラリ確認も行います。静的バイナリや別バージョンは要件を満たしません。Motifの区間切り出しは**`/usr/bin/ffmpeg`を直接実行**するため、PATH上の別の場所に置くだけではMotifの診断を通りません。Coverの音源採譜ではPATHから見つかるFFmpegを確認します。ABC直接入力のCoverではFFmpegを呼びません。実際のパスとライブラリを確認してください。
 
 ```bash
 command -v ffmpeg
@@ -43,11 +43,24 @@ ldd /usr/bin/ffmpeg | grep 'not found'
 command -v ffprobe && ffprobe -version
 ```
 
-Ubuntu／WSL2では管理者が `sudo apt update` と `sudo apt install ffmpeg` で導入できますが、Ubuntuの版によってFFmpeg 6.1以外が入るため、導入後に必ず版と共有ライブラリを確認してください。6.1がない場合は管理者が信頼できる配布物を `/usr/bin/ffmpeg` と対応ライブラリで用意する必要があります。Windowsの `ffmpeg.exe` やPATH上の別パスだけではMotifの条件を満たしません。[FFmpeg公式配布情報](https://ffmpeg.org/download.html)も参照してください。
+Ubuntu／WSL2では管理者がディストリビューションのパッケージ管理機能で導入できますが、**Ubuntu 22.04の公式`ffmpeg`パッケージは4.4.2で、この要件を満たしません**（[Jammyの公式パッケージ情報](https://packages.ubuntu.com/jammy/ffmpeg)）。`apt install ffmpeg`だけで6.1になるとは限らないため、導入後に必ず版を確認してください。管理者に、信頼できる共有ライブラリ付きFFmpeg 6.1.xを用意し、Motif用の`/usr/bin/ffmpeg`とCover採譜用のPATHの両方から利用できるようにしてもらってください。パッケージ管理下のファイルを手動で上書きせず、Windowsの`ffmpeg.exe`や静的バイナリも使わないでください。[FFmpeg公式配布・署名情報](https://ffmpeg.org/download.html)を参照してください。
 
 ## 完了確認
 
-既存の `config.local.json` は編集せず、必要なパスを表示します。新規の場合だけ、`config.example.json` を元に設定ファイルを作るか確認します。`model`、`vae`、両revision、`device`、`python`、`abc_tools`、`sheetsage_python`、`sheetsage_model` を確認してください。設定ファイルとモデルはGitに含めないでください。
+セットアップは各段階の最後に検出したパスを表示します。`config.local.json`がない場合だけ、設定ファイルの作成を提案します。**すでにファイルがある場合（`--stage app`で作った場合を含む）、既存値を保持するため候補を自動追記しません。表示された候補を既存ファイルへ手動で追加・更新してください。** 通常生成とCover／Motifには次のキーが必要です。下記は形式例なので、実際にはセットアップ出力に表示された絶対パスを使ってください。
+
+```json
+{
+  "python": "/absolute/path/to/YuE/venv/bin/python",
+  "model": "/absolute/path/to/YuE2-3B",
+  "vae": "/absolute/path/to/YuE2-Vae",
+  "abc_tools": "/absolute/path/to/YuE/skills/yue2-music/scripts/abc_tools.py",
+  "sheetsage_python": "/absolute/path/to/sheetsage-venv/bin/python",
+  "sheetsage_model": "/absolute/path/to/SheetSage2-standalone"
+}
+```
+
+この例のキーだけを既存JSONオブジェクトへ反映し、ファイル全体を置き換えないでください。既存の`host`、`port`、`allowed_hosts`、`data_dir`、pipeline設定は保持します。特に`abc_tools`、`sheetsage_python`、`sheetsage_model`が`null`の場合は、セットアップ出力から実際の値を転記してください。設定ファイルとモデルはGitに含めないでください。
 
 ```bash
 ./setup.sh --doctor

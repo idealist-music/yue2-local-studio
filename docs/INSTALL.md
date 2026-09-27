@@ -34,7 +34,7 @@ This app's worker directly imports `SheetSage2.modeling_sheetsage2.SheetSage2Mod
 
 ## 3. FFmpeg and system checks
 
-The official SheetSage2 audio instructions specify FFmpeg 6.1 with its shared libraries. The current Motif clip code calls **`/usr/bin/ffmpeg`** specifically; an FFmpeg executable elsewhere on `PATH` does not satisfy that Motif step. The doctor checks that path, its version, and `ldd` results. Cover audio transcription depends on the SheetSage2 audio stack and may fail without its FFmpeg requirement; ABC-only Cover does not call FFmpeg. Check manually:
+**FFmpeg 6.1.x with shared libraries is required for audio transcription and Motif.** The current diagnostic accepts the 6.1 version family and checks `ldd`; a static binary or another version is not accepted. Motif calls **`/usr/bin/ffmpeg`** specifically, so a 6.1 executable elsewhere on `PATH` will not satisfy the Motif check. Cover transcription checks the FFmpeg executable resolved on `PATH`; ABC-only Cover does not call FFmpeg. Check the actual paths and libraries:
 
 ```bash
 command -v ffmpeg
@@ -43,11 +43,24 @@ ldd /usr/bin/ffmpeg | grep 'not found'
 command -v ffprobe && ffprobe -version
 ```
 
-An Ubuntu/WSL2 administrator may use `sudo apt update` and `sudo apt install ffmpeg`, then verify the actual version. Ubuntu releases may provide a version other than 6.1. If so, arrange a trusted FFmpeg 6.1 build and matching shared libraries at `/usr/bin/ffmpeg` through the administrator; do not assume a Windows `ffmpeg.exe` or a binary elsewhere on `PATH` will work for Motif. Consult [FFmpeg's download and license information](https://ffmpeg.org/download.html).
+An Ubuntu/WSL2 administrator may use the distribution package manager, but must verify the installed version: Ubuntu 22.04's official `ffmpeg` package is 4.4.2, which does not meet this requirement ([Jammy package details](https://packages.ubuntu.com/jammy/ffmpeg)). Do not assume that `apt install ffmpeg` supplies 6.1. Arrange a trusted, shared-library FFmpeg 6.1.x build and have the administrator make it available at `/usr/bin/ffmpeg` for Motif and on `PATH` for Cover transcription. Do not overwrite package-managed files manually, and do not assume a Windows `ffmpeg.exe` or static build will work. Consult [FFmpeg's official download and signature information](https://ffmpeg.org/download.html).
 
 ## Finish and optional model load checks
 
-If `config.local.json` already exists, the installer prints suggested paths and leaves every existing value untouched. If it is missing, it offers to create one from `config.example.json` with detected paths. Confirm `model`, `vae`, `revision`, `vae_revision`, `device`, `python`, `abc_tools`, `sheetsage_python`, and `sheetsage_model` as needed. Keep this private file and downloaded models out of Git.
+The installer prints detected path suggestions at the end of each stage. It only offers to create `config.local.json` when the file does not exist. **If the file already exists—including one created by `--stage app`—the installer deliberately does not add or replace any values. Manually add/update the suggested paths in the existing file.** Use the exact absolute paths printed by your run; this example shows the keys needed for normal generation and Cover/Motif:
+
+```json
+{
+  "python": "/absolute/path/to/YuE/venv/bin/python",
+  "model": "/absolute/path/to/YuE2-3B",
+  "vae": "/absolute/path/to/YuE2-Vae",
+  "abc_tools": "/absolute/path/to/YuE/skills/yue2-music/scripts/abc_tools.py",
+  "sheetsage_python": "/absolute/path/to/sheetsage-venv/bin/python",
+  "sheetsage_model": "/absolute/path/to/SheetSage2-standalone"
+}
+```
+
+Merge these keys into your existing JSON object; do not replace the whole file. In particular, keep your existing `host`, `port`, `allowed_hosts`, `data_dir`, and pipeline settings. The three SheetSage2/ABC paths are required for transcription workflows; copy the actual values from the setup output rather than using the example paths. Keep this private file and downloaded models out of Git.
 
 ```bash
 ./setup.sh --doctor

@@ -10,20 +10,23 @@ The application source does not include model weights, YuE2, SheetSage2, MERT, V
 - Python 3.10 is the version observed in the development environment. The app environment installs only the packages in `requirements.txt`.
 - YuE2 needs its own supported Python environment, PyTorch/CUDA setup, model weights, and VAE. Follow the current YuE2 setup documentation for its hardware requirements. GPU generation requires a compatible GPU and enough VRAM for the selected model and settings. CPU mode is useful for limited checks, but this project does not claim that CPU music generation is practical.
 - SheetSage2 transcription needs a separate Python environment, its model package and weights, MERT-v2-FullSong files, and a compatible GPU setup.
-- Motif audio clipping currently invokes `/usr/bin/ffmpeg` directly. Install FFmpeg 6.1 with its shared libraries at that path for the documented motif workflow.
+- **FFmpeg 6.1.x with its shared libraries is required for Cover audio transcription and Motif.** Motif invokes **`/usr/bin/ffmpeg` specifically**; an executable elsewhere on `PATH` is not sufficient for Motif.
 
 The application has no account system or authentication. Keep it on localhost or a trusted private network. Do not expose it directly to the internet. LAN access requires deliberately configuring the listen host and allowed host names in `config.local.json`.
 
 ## Setup
 
-Run the interactive setup from this directory. Choose the app-only stage, normal YuE2 generation, or Cover/Motif transcription:
+Run the interactive setup from this directory. Choose app only, normal YuE2 generation, or the additional SheetSage2 setup for Cover/Motif transcription:
 
 ```bash
 ./setup.sh
+./setup.sh --stage app
+./setup.sh --stage yue --external-dir /absolute/path/to/yue2-external
+./setup.sh --stage cover --external-dir /absolute/path/to/yue2-external
 ./setup.sh --doctor
 ```
 
-The setup script shows sources, destinations, and size estimates before downloading or installing anything. It detects existing YuE2 environments, keeps existing `config.local.json` values, and suggests the required paths. Model access and FFmpeg system installation may need manual action. The complete staged commands and checks are in [INSTALL.md](docs/INSTALL.md). Check each external artifact's terms and any required access with its provider.
+`--stage yue` includes the app stage, and `--stage cover` includes both app and YuE2 stages. The setup script shows sources, destinations, size estimates, and the action before downloads or package installation. It reuses detected environments and prints the paths needed by the app. It creates `config.local.json` only when that file is absent; when it already exists, the script preserves it and does not merge the new path suggestions. **After running later stages, manually copy the displayed `python`, `model`, `vae`, `abc_tools`, `sheetsage_python`, and `sheetsage_model` values into the matching keys in your existing `config.local.json`.** Do not replace the whole file; keep your other settings such as `host`, `port`, and `allowed_hosts`. FFmpeg 6.1.x installation is a separate administrator-managed step, and its version and shared libraries must be checked. See the [installation guide](docs/INSTALL.md) for examples and checks. Check each external artifact's terms and any required access with its provider.
 
 Start the app with:
 
@@ -54,6 +57,6 @@ Databases, logs, uploaded audio, lyrics, and generated outputs are runtime data 
 
 ## Licensing
 
-The original application code in `studio/`, `static/`, the app-specific root scripts and configuration template (`worker.py`, `transcribe_worker.py`, `audio_probe.py`, `run.sh`, `setup.sh`, `setup_assistant.py`, `prepare_sheetsage.py`, and `config.example.json`), and `tests/` is licensed under the BSD Zero Clause License (0BSD); see [LICENSE](LICENSE). This grant applies only to that application-authored code. It does not relicense external libraries, YuE/YuE2 source, model code or weights, or separately installed software. [THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md) lists third-party material included in the release tree; [External Dependencies](docs/EXTERNAL_DEPENDENCIES.md) lists separately installed components and official terms-check sources.
+The original application code in `studio/`, `static/`, the app-specific root scripts and configuration template (`worker.py`, `transcribe_worker.py`, `audio_probe.py`, `run.sh`, `setup.sh`, `setup_assistant.py`, `prepare_sheetsage.py`, and `config.example.json`), and `tests/` is licensed under the BSD Zero Clause License (0BSD); see [LICENSE](LICENSE). This grant applies only to that application-authored code. It does not relicense external libraries, YuE/YuE2 source, model code or weights, or separately installed software. [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) lists third-party material included in the release tree; [External Dependencies](docs/EXTERNAL_DEPENDENCIES.md) lists separately installed components and official terms-check sources.
 
 YuE inference code, YuE2/VAE, SheetSage2, MERT, and other model files have separate terms from their providers. The app publisher does not warrant that external terms permit a user's particular purpose or that any required permission has been obtained. Users must review the exact artifact terms and obtain necessary permissions. Do not infer commercial model rights from the app's 0BSD license. The app license does not assign rights to user inputs or generated music: generated audio is not automatically 0BSD or public domain. Check model terms, input rights, and applicable law separately.
