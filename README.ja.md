@@ -60,3 +60,7 @@ ABC変換の対応範囲は公式YuE補助ツールが受け付ける形式に�
 `studio/`、`static/`、アプリ独自のルートスクリプトと設定テンプレート（`worker.py`、`transcribe_worker.py`、`audio_probe.py`、`run.sh`、`setup.sh`、`setup_assistant.py`、`prepare_sheetsage.py`、`config.example.json`）、`tests/`にあるアプリ独自コードにはBSD Zero Clause License（SPDX: 0BSD）を適用します。本文はルートの[LICENSE](LICENSE)にあります。この許諾はアプリ独自コードだけに適用され、YuE/YuE2のコード、外部ライブラリ、モデルコード・重み、別途導入するソフトウェアのライセンスを変更しません。[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)には公開物に含まれる第三者素材の通知範囲を、[外部依存物ガイド](docs/EXTERNAL_DEPENDENCIES.ja.md)には別途導入するものの公式配布元と条件確認先を記載しています。
 
 YuE推論コード、YuE2/VAE、SheetSage2、MERT、その他のモデルファイルには配布元ごとの条件が適用されます。アプリ公開者は外部条件が個々の利用目的を許可することや、必要な許諾取得を保証しません。利用者は対象ファイルの条件と必要な許諾を確認してください。アプリの0BSDライセンスからモデルの商用利用権を推測しないでください。アプリのライセンスは入力作品や生成音楽の権利を定めず、生成音声が自動的に0BSDまたはパブリックドメインになることもありません。モデル条件、入力素材の権利、適用法令を別途確認してください。
+
+## 謝辞
+
+本アプリは[YuE2](https://github.com/multimodal-art-projection/YuE)を基盤としています。YuEの開発チームがその成果を公開してくださったこと、またSheetSage2、MERT、FFmpegをはじめ、本アプリを支えるオープンソースソフトウェアの開発者の皆さまに感謝します。皆さまの成果によって、この作曲・編集機能が実現しています。
