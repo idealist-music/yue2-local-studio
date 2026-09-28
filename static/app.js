@@ -55,6 +55,8 @@ function fields() {
   return {title: $("title").value, style: $("style").value, lyrics: $("lyrics").value, cot: $("cot").value,
     seed_mode: $("seed-mode").value, seed: $("seed-mode").value === "fixed" ? $("seed").value : null,
     candidate_count: Number($("candidate-count").value), cfg_scale: $("cfg").value === "" ? null : Number($("cfg").value),
+    abc_max_tokens: $("abc-max-tokens").value === "" ? null : Number($("abc-max-tokens").value),
+    semantic_max_tokens: $("semantic-max-tokens").value === "" ? null : Number($("semantic-max-tokens").value),
     source_id: state.source?.id || null};
 }
 function updateForm() {
@@ -71,7 +73,8 @@ function updateForm() {
 function saveDraft() {
   updateForm();
   try {
-    localStorage.setItem(draftKey, JSON.stringify({...fields(), seed_input: $("seed").value, source: state.source}));
+    localStorage.setItem(draftKey, JSON.stringify({...fields(), abc_max_tokens: $("abc-max-tokens").value,
+      semantic_max_tokens: $("semantic-max-tokens").value, seed_input: $("seed").value, source: state.source}));
     $("draft-state").textContent = "下書き保存済み · このブラウザで復元できます。";
   } catch {
     $("draft-state").textContent = "下書きを保存できません。ブラウザの保存領域を確認してください。";
@@ -86,6 +89,8 @@ function fillForm(data, source = null) {
   $("seed").value = data.seed_input ?? data.seed ?? "";
   $("candidate-count").value = String(data.candidate_count || 1);
   $("cfg").value = data.cfg_scale ?? "";
+  $("abc-max-tokens").value = data.abc_max_tokens ?? "";
+  $("semantic-max-tokens").value = data.semantic_max_tokens ?? "";
   state.source = source;
   updateForm();
 }
@@ -113,6 +118,14 @@ $("score-clear").addEventListener("click", () => { state.source = null; saveDraf
 $("compose-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   if (state.submitting) return;
+  for (const id of ["abc-max-tokens", "semantic-max-tokens"]) {
+    const raw = $(id).value;
+    if (raw !== "" && (!/^[0-9]+$/.test(raw) || !Number.isSafeInteger(Number(raw)) || Number(raw) < 1)) {
+      toast("最大トークン数は空欄または正の整数で入力してください。", true);
+      $(id).focus();
+      return;
+    }
+  }
   const payload = fields();
   if (payload.seed_mode === "fixed") {
     try {
@@ -302,7 +315,7 @@ function renderDetail(job) {
   $("detail-favorite").setAttribute("aria-pressed", String(job.favorite));
   $("detail-style").textContent = job.style;
   $("detail-lyrics").textContent = job.lyrics;
-  $("detail-settings").textContent = JSON.stringify({mode: job.cot, seed: job.seed, cfg_scale: job.cfg_scale ?? "YuE2既定値", group_id: job.group_id, source_id: job.source_id, source_title: job.source_title, uses_score: job.uses_score, truncated: job.truncated, created_at: job.created_at, started_at: job.started_at, finished_at: job.finished_at}, null, 2);
+  $("detail-settings").textContent = JSON.stringify({mode: job.cot, seed: job.seed, cfg_scale: job.cfg_scale ?? "YuE2既定値", abc_max_tokens: job.abc_max_tokens ?? "YuE2既定値", semantic_max_tokens: job.semantic_max_tokens ?? "YuE2既定値", group_id: job.group_id, source_id: job.source_id, source_title: job.source_title, uses_score: job.uses_score, truncated: job.truncated, created_at: job.created_at, started_at: job.started_at, finished_at: job.finished_at}, null, 2);
   $("reuse-score").hidden = !job.files.abc;
   $("cover-from-song").hidden = job.task === "transcribe" || !(job.files.abc || job.files.flac || job.files.wav || job.uses_score);
   $("cover-reopen").hidden = !job.cover_id;

@@ -44,6 +44,9 @@ def song_request(job):
     req = {"style": job["style"], "lyrics": job["lyrics"], "cot": job["cot"], "seed": int(job["seed"])}
     if job["cfg_scale"] is not None:
         req["cfg_scale"] = job["cfg_scale"]
+    for key in ("abc_max_tokens", "semantic_max_tokens"):
+        if job.get(key) is not None:
+            req[key] = job[key]
     if job.get("abc") is not None:
         req["abc"] = job["abc"]
     return req
@@ -92,6 +95,7 @@ class Store:
                     id TEXT PRIMARY KEY, group_id TEXT NOT NULL, candidate_index INTEGER NOT NULL,
                     candidate_count INTEGER NOT NULL, title TEXT NOT NULL, style TEXT NOT NULL,
                     lyrics TEXT NOT NULL, cot TEXT NOT NULL, seed TEXT NOT NULL, cfg_scale REAL,
+                    abc_max_tokens INTEGER, semantic_max_tokens INTEGER,
                     source_id TEXT, abc TEXT, runtime TEXT NOT NULL, engine TEXT NOT NULL,
                     status TEXT NOT NULL, favorite INTEGER NOT NULL DEFAULT 0,
                     created_at TEXT NOT NULL, started_at TEXT, finished_at TEXT,
@@ -143,6 +147,10 @@ class Store:
                 db.execute("ALTER TABLE jobs ADD COLUMN score_version_id TEXT")
             if "midi_import_id" not in columns:
                 db.execute("ALTER TABLE jobs ADD COLUMN midi_import_id TEXT")
+            columns = {r[1] for r in db.execute("PRAGMA table_info(jobs)")}
+            for name in ("abc_max_tokens", "semantic_max_tokens"):
+                if name not in columns:
+                    db.execute(f"ALTER TABLE jobs ADD COLUMN {name} INTEGER")
 
     @staticmethod
     def decode(row):
@@ -191,10 +199,10 @@ class Store:
                 if cover and spec.get("task", "generate") == "generate":
                     cover = {**cover, "generation_request": song_request({**spec, "seed": seed, "cfg_scale": spec.get("cfg_scale")})}
                 db.execute("""INSERT INTO jobs(id,group_id,candidate_index,candidate_count,title,style,lyrics,
-                    cot,seed,cfg_scale,source_id,abc,runtime,engine,status,created_at,task,cover_id,cover,motif_id,motif,score_version_id,midi_import_id)
-                    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    cot,seed,cfg_scale,abc_max_tokens,semantic_max_tokens,source_id,abc,runtime,engine,status,created_at,task,cover_id,cover,motif_id,motif,score_version_id,midi_import_id)
+                    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                     (uuid.uuid4().hex, group, index, len(seeds), spec["title"], spec["style"], spec["lyrics"],
-                     spec["cot"], str(seed), spec.get("cfg_scale"), spec.get("source_id"), spec.get("abc"),
+                     spec["cot"], str(seed), spec.get("cfg_scale"), spec.get("abc_max_tokens"), spec.get("semantic_max_tokens"), spec.get("source_id"), spec.get("abc"),
                      dumps(runtime), runtime["engine"], "queued", created, spec.get("task", "generate"),
                      spec.get("cover_id"), dumps(cover), spec.get("motif_id"), dumps(spec.get("motif")),
                      spec.get("score_version_id"), spec.get("midi_import_id")))
@@ -433,9 +441,10 @@ class Store:
                 raise ValueError(f"成果物のハッシュが一致しません: {name}")
         request = json.loads((directory / "request.json").read_text(encoding="utf-8"))
         expected = song_request(job)
-        if any(request.get(k) != v for k, v in expected.items()):
+        app_sampling_keys = {"abc_max_tokens", "semantic_max_tokens"}
+        if any(request.get(k) != v for k, v in expected.items() if k not in app_sampling_keys):
             raise ValueError("保存済み生成条件がキューの条件と一致しません")
-        for key in ("abc", "cfg_scale"):
+        for key in ("abc", "cfg_scale", *app_sampling_keys):
             if key not in expected and request.get(key) is not None:
                 raise ValueError("保存済み生成条件に未指定の設定があります")
         duration = result["audio_seconds"]

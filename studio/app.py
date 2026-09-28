@@ -38,6 +38,8 @@ class Submission(JSONModel):
     seed: StrictStr | None = None
     candidate_count: StrictInt = Field(default=1, ge=1, le=4)
     cfg_scale: float | None = Field(default=None, ge=0, le=20, allow_inf_nan=False)
+    abc_max_tokens: StrictInt | None = Field(default=None, ge=1)
+    semantic_max_tokens: StrictInt | None = Field(default=None, ge=1)
     source_id: StrictStr | None = None
 
     @field_validator("style", "lyrics")
@@ -241,7 +243,7 @@ def create_app(config):
             raise HTTPException(409, "元曲と現在のモデル設定が異なります。同条件で再生成するには元の設定で起動してください")
         if old.get("task") == "transcribe":
             raise HTTPException(422, "採譜はカバー編集画面から再実行してください")
-        spec = {k: old[k] for k in ("title", "style", "lyrics", "cot", "seed", "cfg_scale", "source_id", "abc", "cover_id", "cover")}
+        spec = {k: old[k] for k in ("title", "style", "lyrics", "cot", "seed", "cfg_scale", "abc_max_tokens", "semantic_max_tokens", "source_id", "abc", "cover_id", "cover")}
         spec.update(seed_mode="fixed", candidate_count=1)
         return submit(spec, body.submission_key, {"regenerate": job_id})
 

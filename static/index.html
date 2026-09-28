@@ -44,7 +44,7 @@
           <div><label for="seed-mode">Seed</label><select id="seed-mode" name="seed_mode"><option value="random">ランダム</option><option value="fixed">固定値</option></select></div>
           <div><label for="seed">固定値 <span class="optional">整数</span></label><input id="seed" name="seed" type="text" inputmode="numeric" pattern="[0-9]{1,19}" placeholder="831001" disabled></div>
         </div>
-        <details class="advanced"><summary>詳細設定</summary><label for="cfg">CFG <span class="optional">空欄でYuE2既定値</span></label><input id="cfg" name="cfg_scale" type="number" min="0" max="20" step="any" placeholder="自動（full / melody: 1.0、off: 1.01）"><p class="hint">候補は異なるSeedで一曲ずつ生成します。固定値の場合は指定値から1ずつ増え、上限の次は0になります。</p></details>
+        <details class="advanced"><summary>詳細設定</summary><label for="cfg">CFG <span class="optional">空欄でYuE2既定値</span></label><input id="cfg" name="cfg_scale" type="number" min="0" max="20" step="any" placeholder="自動（full / melody: 1.0、off: 1.01）"><label for="abc-max-tokens">譜面計画の最大トークン数（ABC）<span class="optional">任意・正の整数</span></label><input id="abc-max-tokens" name="abc_max_tokens" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off"><label for="semantic-max-tokens">音声生成の最大トークン数（Semantic）<span class="optional">任意・正の整数</span></label><input id="semantic-max-tokens" name="semantic_max_tokens" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off"><p class="hint">最大トークン数は曲の長さを保証しません。空欄はYuE2のデフォルトを使用します。</p><p class="hint">候補は異なるSeedで一曲ずつ生成します。固定値の場合は指定値から1ずつ増え、上限の次は0になります。</p></details>
         <button id="generate" type="submit" class="primary generate">曲を生成する <span aria-hidden="true">↗</span></button>
         <p class="hint form-foot">ブラウザを閉じても、サーバーの起動中は生成を続けます。</p>
       </form>

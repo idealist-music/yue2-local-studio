@@ -22,6 +22,66 @@ CANCELLED = threading.Event()
 ACTIVE = False
 
 
+class SamplingLimitError(ValueError):
+    def __init__(self, phase, detail, summary):
+        super().__init__(detail)
+        self.phase = phase
+        self.summary = summary
+
+
+def validate_sampling_limit(value, phase, minimum, *, prefix_tokens=None, context=None):
+    """Validate a user override against the loaded pipeline's real limits."""
+    if value is None:
+        return
+    if type(value) is not int or value <= 0:
+        raise SamplingLimitError(phase, f"{phase}_max_tokens must be a positive integer",
+                                 "最大トークン数には正の整数を指定してください。")
+    if value < minimum:
+        raise SamplingLimitError(
+            phase, f"{phase}_max_tokens={value} is below loaded YuE2 min_tokens={minimum}",
+            "入力した最大トークン数が、ロード済みYuE2の対象段階のmin_tokens未満です。値を確認してください。")
+    if prefix_tokens is not None and context is not None and prefix_tokens + value > context:
+        raise SamplingLimitError(
+            "context", f"{phase}_max_tokens={value} + prefix_tokens={prefix_tokens} exceeds context={context}",
+            "歌詞・譜面を含む入力prefixと最大トークン数の合計がYuE2のコンテキスト上限を超えています。値を小さくしてください。自動調整はしていません。")
+
+
+def sampling_overrides(message, pipe):
+    """Build only explicitly requested YuE sampling overrides."""
+    request = message["request"]
+    generation = pipe.generation_config
+    context = int(generation.context)
+    try:
+        model_config = json.loads((Path(pipe.model_dir) / "config.json").read_text(encoding="utf-8"))
+        model_context = model_config.get("max_position_embeddings")
+        if type(model_context) is int and model_context > 0:
+            context = min(context, model_context)
+    except (OSError, ValueError, TypeError):
+        pass
+
+    values = {
+        "abc": request.get("abc_max_tokens"),
+        "semantic": request.get("semantic_max_tokens"),
+    }
+    result = {}
+    for phase, value in values.items():
+        if value is None:
+            continue
+        defaults = getattr(generation, phase)
+        prefix_tokens = None
+        if phase == "abc" and request.get("cot") != "off" and request.get("abc") is None:
+            # Exact prompt tokenization is available before planning. YuE's own
+            # sampler repeats this check immediately before model prefill.
+            from yue2.protocol import SongRequest, token_prefixes
+            prompt = SongRequest(**{k: v for k, v in request.items()
+                                    if k not in ("abc_max_tokens", "semantic_max_tokens")})
+            prefix_tokens = len(token_prefixes(prompt, pipe.tokenizer))
+        validate_sampling_limit(value, phase, defaults.min_tokens,
+                                prefix_tokens=prefix_tokens, context=context)
+        result[f"{phase}_sampling"] = {"max_tokens": value}
+    return result
+
+
 def emit(kind, job_id=None, **data):
     PROTOCOL.write(json.dumps({"type": kind, "job_id": job_id, **data}, ensure_ascii=False, allow_nan=False) + "\n")
     PROTOCOL.flush()
@@ -35,6 +95,10 @@ def stop(signum, frame):
 
 def classify(exc, saving=False, loading=False):
     message = str(exc)
+    if isinstance(exc, SamplingLimitError):
+        return "sampling_limit", exc.summary
+    if "requested generation budget exceeds" in message or "prefix" in message.lower() and "context" in message.lower():
+        return "sampling_limit", "歌詞・譜面を含む入力prefixと最大トークン数の合計がYuE2のコンテキスト上限を超えています。値を小さくしてください。自動調整はしていません。"
     if "out of memory" in message.lower() or type(exc).__name__ == "OutOfMemoryError":
         return "cuda_oom", "GPUメモリが不足しました。設定は変更していません。空きVRAMを確認してください"
     if saving:
@@ -93,8 +157,13 @@ def main():
                     emit("plan_completed", job_id, truncated=False)
                     del plan
                     continue
-                # The server's whitelist contains only verified SongRequest fields.
-                song = pipe(**message["request"], cancelled=CANCELLED.is_set)
+                # Remove app-only settings before building SongRequest and pass
+                # only explicitly supplied stage overrides to the YuE pipeline.
+                request = dict(message["request"])
+                sampling_kwargs = sampling_overrides(message, pipe)
+                request.pop("abc_max_tokens", None)
+                request.pop("semantic_max_tokens", None)
+                song = pipe(**request, **sampling_kwargs, cancelled=CANCELLED.is_set)
                 saving = True
                 song.save_artifacts(output)
                 # Read the actual saved audio, never an estimated/requested duration.
